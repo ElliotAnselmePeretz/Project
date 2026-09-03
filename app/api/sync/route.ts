@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Outlook ---
-  if (token.error) {
+  if (!token.accessToken && !token.error) {
+    errors.push("Outlook: skipped — Microsoft sign-in is not configured.");
+  } else if (token.error) {
     errors.push("Outlook: session expired, please sign in again.");
   } else if (token.accessToken) {
     try {

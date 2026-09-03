@@ -4,8 +4,17 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
  * AES-256-GCM for secrets we must store and later replay (the ManageBac feed
  * URL). Hashing is not an option — we need the original value back to fetch it.
  */
+/**
+ * A fixed, publicly-known key used only when ENCRYPTION_KEY is unset in
+ * development, so `git clone && npm run dev` works with no configuration.
+ * It protects nothing — that is the point: it must never be used in
+ * production, and the check below refuses to.
+ */
+const DEV_FALLBACK_KEY = Buffer.alloc(32, 7).toString("base64");
+
 function key(): Buffer {
-  const raw = process.env.ENCRYPTION_KEY;
+  let raw = process.env.ENCRYPTION_KEY;
+  if (!raw && process.env.NODE_ENV !== "production") raw = DEV_FALLBACK_KEY;
   if (!raw) throw new Error("ENCRYPTION_KEY is not set — see .env.example");
   const buf = Buffer.from(raw, "base64");
   if (buf.length !== 32) {

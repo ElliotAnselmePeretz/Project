@@ -42,7 +42,13 @@ async function refresh(token: JWT): Promise<JWT> {
   }
 }
 
+// Dev fallback so the app boots with no .env; production still demands a real one.
+const secret =
+  process.env.AUTH_SECRET ||
+  (process.env.NODE_ENV !== "production" ? "dev-only-insecure-secret-do-not-deploy" : undefined);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret,
   providers: [
     MicrosoftEntraID({
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,

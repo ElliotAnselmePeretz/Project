@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSession, isPreview } from "@/lib/session";
+import { getSession, isLocalMode, microsoftConfigured } from "@/lib/session";
 import { SignIn, SignOut } from "@/components/SignIn";
 import { Dashboard } from "@/components/Dashboard";
 import { SetupNeeded } from "@/components/SetupNeeded";
@@ -7,13 +7,9 @@ import { SetupNeeded } from "@/components/SetupNeeded";
 export default async function Home() {
   const session = await getSession();
 
-  // Without these, Auth.js sends client_id=undefined and Microsoft answers with
-  // a bare "AADSTS900144" page that says nothing about what to fix.
-  const configured =
-    Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_ID) &&
-    Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET);
-
-  if (!session && !configured && !isPreview) return <SetupNeeded />;
+  // Only a deployed build should ever demand Microsoft setup; locally the app
+  // runs without it.
+  if (!session && !microsoftConfigured) return <SetupNeeded />;
 
   if (!session) {
     return (
@@ -50,11 +46,11 @@ export default async function Home() {
         </div>
       </header>
 
-      {isPreview && (
+      {isLocalMode && (
         <p className="mb-4 rounded-lg border border-purple-300 bg-purple-50 p-3 text-sm text-purple-900 dark:bg-purple-950/30 dark:text-purple-200">
-          <strong>Preview mode.</strong> Sign-in is bypassed for local development, so this is
-          not a real account. Outlook sync will not work; ManageBac will. Unset{" "}
-          <code>DEV_PREVIEW</code> in <code>.env</code> to turn this off.
+          <strong>Local mode.</strong> Microsoft sign-in is off, so this is a shared local
+          account rather than a real one. ManageBac works; Outlook needs Azure credentials
+          in <code>.env</code>. Adding them switches real sign-in on automatically.
         </p>
       )}
 
