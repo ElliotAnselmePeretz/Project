@@ -58,3 +58,73 @@ export const subjectSelections = sqliteTable(
 
 export type SubjectSelection = typeof subjectSelections.$inferSelect;
 export type NewSubjectSelection = typeof subjectSelections.$inferInsert;
+
+/**
+ * Everything below hangs off a subject the student picked, identified by its
+ * group number (1–6) rather than a subject id — a student takes exactly one
+ * subject per group, so the group is already a stable per-user key.
+ */
+
+/** A graded piece of work: a test, an IA draft, a mock. */
+export const assessments = sqliteTable(
+  "assessments",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    title: text("title").notNull(),
+    mark: real("mark").notNull(),
+    maxMark: real("max_mark").notNull(),
+    /** Weighting toward the subject average. Null counts as 1. */
+    weight: real("weight"),
+    takenAt: integer("taken_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("assessments_user_group").on(t.userId, t.groupNumber)],
+);
+
+/** The grade (1–7) a student is aiming for in one subject. */
+export const subjectTargets = sqliteTable(
+  "subject_targets",
+  {
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    targetGrade: integer("target_grade").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.groupNumber] })],
+);
+
+/** A checkable to-do for one subject. */
+export const subjectGoals = sqliteTable(
+  "subject_goals",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    text: text("text").notNull(),
+    done: integer("done", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("subject_goals_user_group").on(t.userId, t.groupNumber)],
+);
+
+/** A free-text note for one subject. */
+export const subjectNotes = sqliteTable(
+  "subject_notes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    title: text("title"),
+    body: text("body").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("subject_notes_user_group").on(t.userId, t.groupNumber)],
+);
+
+export type Assessment = typeof assessments.$inferSelect;
+export type SubjectTarget = typeof subjectTargets.$inferSelect;
+export type SubjectGoal = typeof subjectGoals.$inferSelect;
+export type SubjectNote = typeof subjectNotes.$inferSelect;

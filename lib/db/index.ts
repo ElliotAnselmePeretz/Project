@@ -54,6 +54,54 @@ export function ensureSchema() {
         updated_at INTEGER DEFAULT (unixepoch()),
         PRIMARY KEY (user_id, group_number)
       )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS assessments (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        mark REAL NOT NULL,
+        max_mark REAL NOT NULL,
+        weight REAL,
+        taken_at INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS assessments_user_group ON assessments (user_id, group_number)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS subject_targets (
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        target_grade INTEGER NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, group_number)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS subject_goals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS subject_goals_user_group ON subject_goals (user_id, group_number)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS subject_notes (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        title TEXT,
+        body TEXT NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS subject_notes_user_group ON subject_notes (user_id, group_number)`,
+    );
   })();
   return ready;
 }
