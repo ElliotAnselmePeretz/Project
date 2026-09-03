@@ -1,5 +1,34 @@
 # Project
 
+## Before changing anything visual — read this first
+
+The site has a design system at **[`components/ui/`](components/ui/README.md)**,
+with design tokens in **`app/globals.css`**. It is the single place the site's
+look is defined, and it is meant to be built on.
+
+**Do not write raw colours or one-off styles in feature components.** Use the
+token utilities (`bg-surface`, `text-muted`, `border-border`, `text-accent`) and
+the shared primitives (`Button`, `Card`, `Badge`, `Banner`, `Input`, `Page`).
+If something you need does not exist, add it to `components/ui/` and export it —
+do not style around it locally.
+
+Read `components/ui/README.md` before any styling work.
+
+### Where code lives
+
+```
+app/                             routes and API handlers
+app/globals.css                  design tokens — colours, radii, shadows
+components/ui/                   the design system (shared primitives)
+components/layout/               site chrome: AppShell, nav, sign-in
+components/features/<feature>/   one folder per feature, built from ui/
+lib/                             server logic, integrations, database
+```
+
+New feature? Add `components/features/<your-feature>/` and a route under `app/`.
+Keep feature code inside its own folder — that is what stops two people
+colliding.
+
 ## Collaboration rules
 
 Two people work in this repo, each with their own Claude Code session. **The two

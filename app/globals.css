@@ -1,25 +1,124 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   DESIGN TOKENS — the single source of truth for the site's look.
+   Change a colour here and it changes everywhere. Do not hard-code colours in
+   components; use the utilities these generate (bg-surface, text-muted, ...).
+   ========================================================================= */
+
 :root {
-  --bg: #fafaf9;
-  --fg: #1c1917;
-  --muted: #78716c;
-  --card: #ffffff;
-  --border: #e7e5e4;
+  /* Warm neutrals */
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface-alt: #f5f1ea;
+  --border: #e9e1d6;
+  --border-strong: #d9cec0;
+
+  /* Text */
+  --fg: #2b2723;
+  --muted: #7a6f62;
+  --faint: #a89c8c;
+
+  /* Warm terracotta accent */
+  --accent: #c2622d;
+  --accent-hover: #a85222;
+  --accent-fg: #ffffff;
+  --accent-soft: #fbeee3;
+
+  /* Semantic, warm-tinted to match */
+  --success: #4f7a3f;
+  --success-soft: #eef4e9;
+  --warning: #b5761b;
+  --warning-soft: #fdf2e0;
+  --danger: #b4402f;
+  --danger-soft: #fcecea;
+  --info: #3f6b7a;
+  --info-soft: #e9f2f5;
+
+  /* Shape & depth — generous radii and soft shadows read as friendly */
+  --radius-sm: 0.5rem;
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --shadow-sm: 0 1px 2px rgb(74 59 42 / 0.05);
+  --shadow: 0 2px 8px rgb(74 59 42 / 0.06);
+  --shadow-lg: 0 8px 24px rgb(74 59 42 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0c0a09;
-    --fg: #fafaf9;
-    --muted: #a8a29e;
-    --card: #1c1917;
-    --border: #292524;
+    --bg: #1a1714;
+    --surface: #241f1b;
+    --surface-alt: #2e2823;
+    --border: #3a322b;
+    --border-strong: #4a4038;
+
+    --fg: #f4efe8;
+    --muted: #a89c8c;
+    --faint: #7a6f62;
+
+    --accent: #e08a52;
+    --accent-hover: #eb9a66;
+    --accent-fg: #1a1714;
+    --accent-soft: #3a2a1d;
+
+    --success: #8fbc7a;
+    --success-soft: #24301f;
+    --warning: #dfa85c;
+    --warning-soft: #352a18;
+    --danger: #e08573;
+    --danger-soft: #3a231e;
+    --info: #85b3c4;
+    --info-soft: #1e2c33;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+    --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.45);
   }
+}
+
+/* Expose the tokens as Tailwind utilities: bg-surface, text-muted, border-border… */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-soft: var(--shadow);
+  --shadow-soft-lg: var(--shadow-lg);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One consistent focus ring for every interactive element. */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }

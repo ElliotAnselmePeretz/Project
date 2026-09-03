@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SUBJECT_GROUPS, MIN_HL_COUNT, MAX_HL_COUNT, type SubjectLevel } from "@/lib/ib-subjects";
+import { Badge, Banner, Button, Card, CardBody, Select, SectionTitle } from "@/components/ui";
 
 interface Choice {
   subjectName: string;
@@ -64,13 +65,13 @@ export function SubjectSelection() {
     }
   }
 
-  if (loading) return <p className="text-sm text-[var(--muted)]">Loading…</p>;
+  if (loading) return <p className="text-sm text-muted">Loading…</p>;
 
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="font-medium">Your DP subjects</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <SectionTitle>Your DP subjects</SectionTitle>
+        <p className="text-sm text-muted">
           Pick one subject per group, and a level for each. IB requires {MIN_HL_COUNT}–{MAX_HL_COUNT} at Higher
           Level (HL); the rest at Standard Level (SL).
         </p>
@@ -80,18 +81,16 @@ export function SubjectSelection() {
         {SUBJECT_GROUPS.map((group) => {
           const choice = choices[group.number];
           return (
-            <div
-              key={group.number}
-              className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-3"
-            >
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
-                Group {group.number} · {group.name}
-              </p>
+            <Card key={group.number}>
+              <CardBody className="space-y-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-faint">
+                  Group {group.number} · {group.name}
+                </p>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <select
+                <Select
                   value={choice.subjectName}
                   onChange={(e) => setSubject(group.number, e.target.value)}
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                  className="flex-1"
                 >
                   <option value="">Select a subject…</option>
                   {group.options.map((opt) => (
@@ -99,43 +98,51 @@ export function SubjectSelection() {
                       {opt}
                     </option>
                   ))}
-                </select>
-                <div className="flex gap-3 text-sm">
+                </Select>
+                <div className="flex gap-1.5">
                   {(["HL", "SL"] as const).map((lvl) => (
-                    <label key={lvl} className="flex items-center gap-1.5">
+                    <label
+                      key={lvl}
+                      className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-2 text-sm transition-colors ${
+                        choice.level === lvl && choice.subjectName
+                          ? "border-accent bg-accent-soft font-medium text-accent"
+                          : "border-border text-muted hover:border-border-strong"
+                      } ${!choice.subjectName ? "cursor-not-allowed opacity-50" : ""}`}
+                    >
+                      {/* The pill is the visible control; the radio stays for
+                          keyboard and screen-reader users. */}
                       <input
                         type="radio"
                         name={`level-${group.number}`}
                         checked={choice.level === lvl}
                         onChange={() => setLevel(group.number, lvl)}
                         disabled={!choice.subjectName}
+                        className="sr-only"
                       />
                       {lvl}
                     </label>
                   ))}
                 </div>
               </div>
-            </div>
+              </CardBody>
+            </Card>
           );
         })}
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-[var(--muted)]">
-          {chosenCount}/6 chosen · {hlCount} HL
-        </p>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Badge tone={chosenCount === 6 ? "success" : "neutral"}>{chosenCount}/6 chosen</Badge>
+          <Badge tone={hlCount >= MIN_HL_COUNT && hlCount <= MAX_HL_COUNT ? "success" : "warning"}>
+            {hlCount} HL
+          </Badge>
+        </div>
+        <Button variant="primary" onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save subjects"}
-        </button>
+        </Button>
       </div>
 
-      {message && (
-        <p className={`text-sm ${message.ok ? "text-emerald-600" : "text-red-600"}`}>{message.text}</p>
-      )}
+      {message && <Banner tone={message.ok ? "success" : "danger"}>{message.text}</Banner>}
     </section>
   );
 }
