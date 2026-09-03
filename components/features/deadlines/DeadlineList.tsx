@@ -31,6 +31,7 @@ export function DeadlineList() {
   const [errors, setErrors] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [meal, setMeal] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/deadlines");
@@ -56,11 +57,16 @@ export function DeadlineList() {
 
   async function dismiss(id: string) {
     setDeadlines((cur) => cur.filter((d) => d.id !== id)); // optimistic
-    await fetch("/api/deadlines", {
+    const res = await fetch("/api/deadlines", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, dismissed: true }),
     });
+    const data = await res.json().catch(() => ({}));
+    if (data.mealEarned) {
+      setMeal("+1 meal for your pet");
+      setTimeout(() => setMeal(null), 3000);
+    }
   }
 
   return (
@@ -74,6 +80,12 @@ export function DeadlineList() {
       >
         Upcoming
       </SectionTitle>
+
+      {meal && (
+        <div className="mb-3">
+          <Banner tone="success">{meal}</Banner>
+        </div>
+      )}
 
       {errors.length > 0 && (
         <div className="mb-3 space-y-2">
@@ -130,9 +142,10 @@ export function DeadlineList() {
                       )}
                       <button
                         onClick={() => dismiss(d.id)}
+                        title="Marks it done and earns your pet a meal"
                         className="rounded-sm px-1.5 py-0.5 text-xs text-muted transition-colors hover:bg-surface-alt hover:text-fg"
                       >
-                        Dismiss
+                        Done
                       </button>
                     </div>
                   </div>

@@ -3,6 +3,7 @@ import { SignIn, SignOut } from "@/components/layout/SignIn";
 import { SetupNeeded } from "@/components/layout/SetupNeeded";
 import { AppShell } from "@/components/layout/AppShell";
 import { DeadlineList } from "@/components/features/deadlines/DeadlineList";
+import { PetPanel } from "@/components/features/pet/PetPanel";
 import { Page, PageHeader, Banner } from "@/components/ui";
 
 export default async function Home() {
@@ -49,6 +50,8 @@ export default async function Home() {
               Your Microsoft session expired. Sign out and back in to resume syncing.
             </Banner>
           )}
+
+          <PetPanel compact />
 
           <DeadlineList />
         </div>
