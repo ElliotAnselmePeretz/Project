@@ -45,6 +45,15 @@ export function ensureSchema() {
     await client.execute(
       `CREATE INDEX IF NOT EXISTS deadlines_user_due ON deadlines (user_id, due_at)`,
     );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS subject_selections (
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        subject_name TEXT NOT NULL,
+        level TEXT NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, group_number)
+      )`);
   })();
   return ready;
 }

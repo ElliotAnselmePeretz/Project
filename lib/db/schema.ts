@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey } from "drizzle-orm/sqlite-core";
 
 /**
  * Users are identified by their Entra object id (stable per person per tenant).
@@ -42,3 +42,19 @@ export const deadlines = sqliteTable(
 
 export type Deadline = typeof deadlines.$inferSelect;
 export type NewDeadline = typeof deadlines.$inferInsert;
+
+/** One row per IB subject group (1–6) a student has picked a subject for. */
+export const subjectSelections = sqliteTable(
+  "subject_selections",
+  {
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    subjectName: text("subject_name").notNull(),
+    level: text("level", { enum: ["HL", "SL"] }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.groupNumber] })],
+);
+
+export type SubjectSelection = typeof subjectSelections.$inferSelect;
+export type NewSubjectSelection = typeof subjectSelections.$inferInsert;

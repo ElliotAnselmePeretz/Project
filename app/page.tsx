@@ -40,6 +40,9 @@ export default async function Home() {
           <p className="text-sm text-[var(--muted)]">{session.user?.email}</p>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/subjects" className="text-sm hover:underline">
+            Subjects
+          </Link>
           <Link href="/settings" className="text-sm hover:underline">
             Settings
           </Link>
