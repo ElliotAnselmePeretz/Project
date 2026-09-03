@@ -193,10 +193,12 @@ body {
 
 @keyframes drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  20%      { transform: translate(14%, -9%) scale(1.14); }
-  40%      { transform: translate(-8%, 12%) scale(0.9); }
-  60%      { transform: translate(11%, 8%) scale(1.08); }
-  80%      { transform: translate(-12%, -7%) scale(0.95); }
+  14%      { transform: translate(26%, -16%) scale(1.18); }
+  28%      { transform: translate(-19%, 21%) scale(0.86); }
+  43%      { transform: translate(30%, 14%) scale(1.1); }
+  57%      { transform: translate(-27%, -12%) scale(0.92); }
+  71%      { transform: translate(17%, 26%) scale(1.14); }
+  86%      { transform: translate(-23%, -20%) scale(0.9); }
 }
 
 @keyframes pulse-soft {
@@ -250,14 +252,14 @@ body {
   top: -22vmax;
   left: -14vmax;
   background: radial-gradient(circle, var(--glow-1) 0%, transparent 68%);
-  animation: drift 18s ease-in-out infinite, pulse-soft 9s ease-in-out infinite;
+  animation: drift 42s ease-in-out infinite, pulse-soft 15s ease-in-out infinite;
 }
 
 .glow-field::after {
   right: -18vmax;
   bottom: -24vmax;
   background: radial-gradient(circle, var(--glow-2) 0%, transparent 68%);
-  animation: drift 23s ease-in-out infinite reverse, pulse-soft 11s ease-in-out infinite;
+  animation: drift 55s ease-in-out infinite reverse, pulse-soft 19s ease-in-out infinite;
 }
 
 /* The glow is a wash of colour, not a spotlight — keep it faint on both themes. */
