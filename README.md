@@ -32,6 +32,22 @@ outlook.com accounts have no such restriction.
 
 ## Setup
 
+```bash
+npm install && npm run dev
+```
+
+That is the whole setup. The app runs at http://localhost:3000 in **local mode**:
+no sign-in, no configuration, ManageBac only. Add your feed URL under Settings
+and press Sync now.
+
+Outlook needs the optional Microsoft setup below. Everything else works without it.
+
+## Optional: turn on Microsoft sign-in
+
+Filling in the Azure credentials switches the app from a single local account to
+real per-user sign-in, and enables Outlook scanning. No code changes needed —
+the app detects the credentials at boot.
+
 ### 1. Register the Azure app
 
 1. Go to [Azure Portal → App registrations](https://portal.azure.com) → **New registration**
@@ -56,15 +72,17 @@ openssl rand -base64 32
 
 Use one for `AUTH_SECRET` and another for `ENCRYPTION_KEY`.
 
-### 3. Run it
+### 3. Restart
 
 ```bash
-npm install && npm run dev
+npm run dev
 ```
 
-Open http://localhost:3000, sign in, then add your ManageBac feed under
-**Settings** (ManageBac → My Workspace → View Full Calendar → Subscribe to
-Calendar). Press **Sync now**.
+The local-mode banner disappears and a **Sign in with Microsoft** button replaces it.
+
+> On a school tenant expect *"This app requires your admin's approval"* — most
+> schools disable user consent, and only IT can clear it. Local mode keeps
+> working meanwhile.
 
 ## Tests
 

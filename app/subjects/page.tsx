@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { SubjectSelection } from "@/components/SubjectSelection";
 
 export default async function Subjects() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/");
 
   return (

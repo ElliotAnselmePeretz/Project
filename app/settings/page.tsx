@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { ManagebacForm } from "@/components/ManagebacForm";
 
 export default async function Settings() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/");
 
   return (
