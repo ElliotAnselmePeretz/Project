@@ -122,3 +122,117 @@ body {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* ============================================================================
+   MOTION
+   Every animation here is disabled by prefers-reduced-motion at the bottom of
+   this file. Use these utilities rather than hand-rolling keyframes.
+   ========================================================================= */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(3%, -4%) scale(1.06); }
+  66%      { transform: translate(-3%, 3%) scale(0.96); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+
+.animate-fade-up   { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in   { animation: fade-in 0.4s ease both; }
+.animate-slide-in  { animation: slide-in-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Stagger children: each item enters slightly after the one above it. */
+.stagger > * { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.09s; }
+.stagger > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger > *:nth-child(5) { animation-delay: 0.15s; }
+.stagger > *:nth-child(6) { animation-delay: 0.18s; }
+.stagger > *:nth-child(7) { animation-delay: 0.21s; }
+.stagger > *:nth-child(8) { animation-delay: 0.24s; }
+.stagger > *:nth-child(n + 9) { animation-delay: 0.27s; }
+
+/* ============================================================================
+   AMBIENT GLOW
+   Two slow-drifting blobs behind the app. Pointer-events none, fixed, and
+   behind everything — purely decorative.
+   ========================================================================= */
+
+.glow-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glow-field::before,
+.glow-field::after {
+  content: "";
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.glow-field::before {
+  top: -22vmax;
+  left: -14vmax;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 68%);
+  animation: drift 26s ease-in-out infinite, pulse-soft 12s ease-in-out infinite;
+}
+
+.glow-field::after {
+  right: -18vmax;
+  bottom: -24vmax;
+  background: radial-gradient(circle, var(--info) 0%, transparent 68%);
+  animation: drift 34s ease-in-out infinite reverse, pulse-soft 16s ease-in-out infinite;
+}
+
+/* The glow is a wash of colour, not a spotlight — keep it faint on both themes. */
+:root .glow-field::before { opacity: 0.13; }
+:root .glow-field::after  { opacity: 0.10; }
+
+@media (prefers-color-scheme: dark) {
+  :root .glow-field::before { opacity: 0.20; }
+  :root .glow-field::after  { opacity: 0.15; }
+}
+
+/* ============================================================================
+   Respect the OS "reduce motion" setting: keep every final state, drop the
+   movement. Vestibular disorders make drifting backgrounds genuinely unpleasant.
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .glow-field::before,
+  .glow-field::after { animation: none !important; }
+}

@@ -57,6 +57,32 @@ value — so if you only use tokens, you never think about it.
 | `SectionTitle` | A heading within a page, with an optional action on the right |
 | `EmptyState` | "Nothing here yet" placeholders |
 
+## Motion
+
+Use these rather than writing keyframes in a component:
+
+| Class | Effect |
+| --- | --- |
+| `animate-fade-up` | Fade in while rising slightly — page and section entrances |
+| `animate-fade-in` | Plain fade — overlays and backdrops |
+| `animate-slide-in` | Slide in from the left — the mobile drawer |
+| `stagger` | On a parent: children enter one after another |
+
+Hover and press states are built into the primitives (cards lift, buttons press
+in), so you rarely need to add them yourself.
+
+**Every animation is switched off by `prefers-reduced-motion`**, handled globally
+in `globals.css`. Do not write inline keyframes that bypass it — drifting
+backgrounds and moving content can be genuinely unpleasant for people with
+vestibular disorders.
+
+## Ambient glow
+
+`AppShell` renders a `.glow-field` — two slow-drifting blurred blobs behind
+everything, built from `--accent` and `--info`. It is decorative and
+`aria-hidden`. Adjust the intensity via the `.glow-field::before/::after`
+opacity rules in `globals.css`.
+
 ## Adding a component
 
 1. One file per component in this folder
