@@ -29,3 +29,13 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Local database
+*.db
+*.db-journal
+*.tsbuildinfo
