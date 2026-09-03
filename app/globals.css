@@ -1,25 +1,292 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   DESIGN TOKENS — the single source of truth for the site's look.
+   Change a colour here and it changes everywhere. Do not hard-code colours in
+   components; use the utilities these generate (bg-surface, text-muted, ...).
+   ========================================================================= */
+
 :root {
-  --bg: #fafaf9;
-  --fg: #1c1917;
-  --muted: #78716c;
-  --card: #ffffff;
-  --border: #e7e5e4;
+  /* Cool, airy neutrals to sit under the blue accent */
+  --bg: #f7fafc;
+  --surface: #ffffff;
+  --surface-alt: #eef4f8;
+  --border: #dde7ee;
+  --border-strong: #c6d5e0;
+
+  /* Text */
+  --fg: #16242e;
+  --muted: #5c7080;
+  --faint: #8ba0ae;
+
+  /* Light blue accent. The accent itself is deep enough to carry white text at
+     small sizes (~5:1); the airy light blue lives in --accent-soft and the glow. */
+  --accent: #0f76b4;
+  --accent-hover: #0c6296;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3f1fb;
+
+  /* Decorative glow — deliberately lighter than the accent */
+  --glow-1: #5cb8e8;
+  --glow-2: #8ed0f0;
+
+  /* Semantic */
+  --success: #2f7d4f;
+  --success-soft: #e6f4ec;
+  --warning: #a8701a;
+  --warning-soft: #fdf1de;
+  --danger: #b33c31;
+  --danger-soft: #fceceb;
+  --info: #2b6f8f;
+  --info-soft: #e6f2f7;
+
+  /* Shape & depth */
+  --radius-sm: 0.5rem;
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --shadow-sm: 0 1px 2px rgb(22 36 46 / 0.05);
+  --shadow: 0 2px 8px rgb(22 36 46 / 0.07);
+  --shadow-lg: 0 8px 24px rgb(22 36 46 / 0.10);
 }
 
+/* Follow the OS, unless the user explicitly chose light. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0c0a09;
-    --fg: #fafaf9;
-    --muted: #a8a29e;
-    --card: #1c1917;
-    --border: #292524;
+  :root:not([data-theme="light"]) {
+  /* Warm dark neutrals to sit under the orange accent */
+  --bg: #17130f;
+  --surface: #221c17;
+  --surface-alt: #2c241d;
+  --border: #392f26;
+  --border-strong: #4b3e33;
+
+  --fg: #f6efe7;
+  --muted: #ab9c8b;
+  --faint: #7d7061;
+
+  /* Orange accent — light enough to read against the dark surfaces */
+  --accent: #f0873d;
+  --accent-hover: #f79b58;
+  --accent-fg: #17130f;
+  --accent-soft: #3b2617;
+
+  --glow-1: #f0873d;
+  --glow-2: #d9602a;
+
+  --success: #86bd77;
+  --success-soft: #22301d;
+  --warning: #e0a95c;
+  --warning-soft: #362817;
+  --danger: #e58573;
+  --danger-soft: #3a221d;
+  --info: #7fb6cc;
+  --info-soft: #1c2c33;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
   }
+}
+
+/* An explicit choice always wins, in both directions. */
+:root[data-theme="dark"] {
+  /* Warm dark neutrals to sit under the orange accent */
+  --bg: #17130f;
+  --surface: #221c17;
+  --surface-alt: #2c241d;
+  --border: #392f26;
+  --border-strong: #4b3e33;
+
+  --fg: #f6efe7;
+  --muted: #ab9c8b;
+  --faint: #7d7061;
+
+  /* Orange accent — light enough to read against the dark surfaces */
+  --accent: #f0873d;
+  --accent-hover: #f79b58;
+  --accent-fg: #17130f;
+  --accent-soft: #3b2617;
+
+  --glow-1: #f0873d;
+  --glow-2: #d9602a;
+
+  --success: #86bd77;
+  --success-soft: #22301d;
+  --warning: #e0a95c;
+  --warning-soft: #362817;
+  --danger: #e58573;
+  --danger-soft: #3a221d;
+  --info: #7fb6cc;
+  --info-soft: #1c2c33;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+
+/* Expose the tokens as Tailwind utilities: bg-surface, text-muted, border-border… */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-soft: var(--shadow);
+  --shadow-soft-lg: var(--shadow-lg);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One consistent focus ring for every interactive element. */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================================
+   MOTION
+   Every animation here is disabled by prefers-reduced-motion at the bottom of
+   this file. Use these utilities rather than hand-rolling keyframes.
+   ========================================================================= */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  14%      { transform: translate(26%, -16%) scale(1.18); }
+  28%      { transform: translate(-19%, 21%) scale(0.86); }
+  43%      { transform: translate(30%, 14%) scale(1.1); }
+  57%      { transform: translate(-27%, -12%) scale(0.92); }
+  71%      { transform: translate(17%, 26%) scale(1.14); }
+  86%      { transform: translate(-23%, -20%) scale(0.9); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+
+.animate-fade-up   { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in   { animation: fade-in 0.4s ease both; }
+.animate-slide-in  { animation: slide-in-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Stagger children: each item enters slightly after the one above it. */
+.stagger > * { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.09s; }
+.stagger > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger > *:nth-child(5) { animation-delay: 0.15s; }
+.stagger > *:nth-child(6) { animation-delay: 0.18s; }
+.stagger > *:nth-child(7) { animation-delay: 0.21s; }
+.stagger > *:nth-child(8) { animation-delay: 0.24s; }
+.stagger > *:nth-child(n + 9) { animation-delay: 0.27s; }
+
+/* ============================================================================
+   AMBIENT GLOW
+   Two slow-drifting blobs behind the app. Pointer-events none, fixed, and
+   behind everything — purely decorative.
+   ========================================================================= */
+
+.glow-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glow-field::before,
+.glow-field::after {
+  content: "";
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.glow-field::before {
+  top: -22vmax;
+  left: -14vmax;
+  background: radial-gradient(circle, var(--glow-1) 0%, transparent 68%);
+  animation: drift 42s ease-in-out infinite, pulse-soft 15s ease-in-out infinite;
+}
+
+.glow-field::after {
+  right: -18vmax;
+  bottom: -24vmax;
+  background: radial-gradient(circle, var(--glow-2) 0%, transparent 68%);
+  animation: drift 55s ease-in-out infinite reverse, pulse-soft 19s ease-in-out infinite;
+}
+
+/* The glow is a wash of colour, not a spotlight — keep it faint on both themes. */
+:root .glow-field::before { opacity: 0.22; }
+:root .glow-field::after  { opacity: 0.16; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .glow-field::before { opacity: 0.26; }
+  :root:not([data-theme="light"]) .glow-field::after  { opacity: 0.19; }
+}
+
+:root[data-theme="dark"] .glow-field::before { opacity: 0.26; }
+:root[data-theme="dark"] .glow-field::after  { opacity: 0.19; }
+
+/* ============================================================================
+   Respect the OS "reduce motion" setting: keep every final state, drop the
+   movement. Vestibular disorders make drifting backgrounds genuinely unpleasant.
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .glow-field::before,
+  .glow-field::after { animation: none !important; }
 }

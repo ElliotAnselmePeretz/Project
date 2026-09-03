@@ -1,6 +1,6 @@
-# Deadline Tracker
+# Studybase
 
-One list of everything due: ManageBac deadlines plus anything that looks like a
+A study dashboard for IB students: deadlines, subjects, and one list of everything due — ManageBac deadlines plus anything that looks like a
 deadline in your Outlook mail. Each person signs in with their own Microsoft
 account and sees only their own data.
 

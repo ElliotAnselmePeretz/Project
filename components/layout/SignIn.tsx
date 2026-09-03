@@ -1,4 +1,5 @@
 import { signIn, signOut } from "@/lib/auth";
+import { Button } from "@/components/ui";
 
 export function SignIn() {
   return (
@@ -8,12 +9,9 @@ export function SignIn() {
         await signIn("microsoft-entra-id", { redirectTo: "/" });
       }}
     >
-      <button
-        type="submit"
-        className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-      >
+      <Button type="submit" variant="primary">
         Sign in with Microsoft
-      </button>
+      </Button>
     </form>
   );
 }
@@ -26,9 +24,9 @@ export function SignOut() {
         await signOut({ redirectTo: "/" });
       }}
     >
-      <button type="submit" className="text-sm text-[var(--muted)] hover:underline">
+      <Button type="submit" variant="ghost" size="sm">
         Sign out
-      </button>
+      </Button>
     </form>
   );
 }
