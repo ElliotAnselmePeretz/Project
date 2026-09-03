@@ -14,13 +14,13 @@ export default async function Home() {
   if (!session) {
     return (
       <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-6 text-center">
-        <div className="grid h-12 w-12 place-items-center rounded-lg bg-accent text-lg font-semibold text-accent-fg">
-          D
+        <div className="grid h-12 w-12 place-items-center rounded-lg bg-accent text-lg font-bold text-accent-fg">
+          S
         </div>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Deadlines</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Studybase</h1>
           <p className="mt-2 text-sm text-muted">
-            Your ManageBac deadlines and anything due in your Outlook mail, in one list.
+            Your ManageBac deadlines, your IB subjects, and anything due in your inbox.
           </p>
         </div>
         <SignIn />

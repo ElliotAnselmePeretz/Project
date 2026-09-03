@@ -17,8 +17,8 @@ export function AppShell({ email, action, children }: { email?: string | null; a
       <header className="sticky top-0 z-10 border-b border-border bg-bg/85 backdrop-blur">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
           <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-fg">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent text-sm text-accent-fg">D</span>
-            Deadlines
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent text-sm font-bold text-accent-fg">S</span>
+            Studybase
           </Link>
 
           <nav className="flex items-center gap-1">
