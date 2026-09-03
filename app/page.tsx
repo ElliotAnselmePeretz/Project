@@ -2,9 +2,18 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { SignIn, SignOut } from "@/components/SignIn";
 import { Dashboard } from "@/components/Dashboard";
+import { SetupNeeded } from "@/components/SetupNeeded";
 
 export default async function Home() {
   const session = await auth();
+
+  // Without these, Auth.js sends client_id=undefined and Microsoft answers with
+  // a bare "AADSTS900144" page that says nothing about what to fix.
+  const configured =
+    Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_ID) &&
+    Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET);
+
+  if (!session && !configured) return <SetupNeeded />;
 
   if (!session) {
     return (
