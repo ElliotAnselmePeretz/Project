@@ -35,7 +35,9 @@ export function SubjectManager({ group }: { group: number }) {
   if (!data) return null;
 
   return (
-    <div className="space-y-5">
+    // `stagger` is the design system's entrance motion: panels arrive one after
+    // another, and it respects prefers-reduced-motion globally.
+    <div className="stagger space-y-5">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold tracking-tight text-fg">{data.subject.name}</h2>
         <Badge tone={data.subject.level === "HL" ? "accent" : "neutral"}>{data.subject.level}</Badge>
