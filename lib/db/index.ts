@@ -39,6 +39,18 @@ export function ensureSchema() {
         dismissed INTEGER NOT NULL DEFAULT 0,
         updated_at INTEGER DEFAULT (unixepoch())
       )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS pets (
+        user_id TEXT PRIMARY KEY,
+        species TEXT NOT NULL,
+        name TEXT NOT NULL,
+        hunger REAL NOT NULL DEFAULT 100,
+        xp INTEGER NOT NULL DEFAULT 0,
+        meals INTEGER NOT NULL DEFAULT 0,
+        last_fed_at INTEGER NOT NULL,
+        hidden INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
     await client.execute(
       `CREATE UNIQUE INDEX IF NOT EXISTS deadlines_user_source_key ON deadlines (user_id, source_key)`,
     );

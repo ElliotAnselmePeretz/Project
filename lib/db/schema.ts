@@ -58,3 +58,24 @@ export const subjectSelections = sqliteTable(
 
 export type SubjectSelection = typeof subjectSelections.$inferSelect;
 export type NewSubjectSelection = typeof subjectSelections.$inferInsert;
+
+/**
+ * One pet per user. `meals` is the earned currency: completing a deadline adds
+ * one, feeding spends one. `hunger` is the value at `lastFedAt` — the live
+ * figure is derived from elapsed time by lib/pets.ts, so a pet gets hungry
+ * whether or not anyone opens the page.
+ */
+export const pets = sqliteTable("pets", {
+  userId: text("user_id").primaryKey(),
+  species: text("species", { enum: ["nimbus", "sprout", "ember"] }).notNull(),
+  name: text("name").notNull(),
+  hunger: real("hunger").notNull().default(100),
+  xp: integer("xp").notNull().default(0),
+  meals: integer("meals").notNull().default(0),
+  lastFedAt: integer("last_fed_at", { mode: "timestamp" }).notNull(),
+  hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+});
+
+export type Pet = typeof pets.$inferSelect;
+export type NewPet = typeof pets.$inferInsert;
