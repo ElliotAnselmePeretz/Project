@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { SUBJECT_GROUPS, MIN_HL_COUNT, MAX_HL_COUNT, type SubjectLevel } from "@/lib/ib-subjects";
 import { Badge, Banner, Button, Card, CardBody, Select, SectionTitle } from "@/components/ui";
 
@@ -19,22 +18,16 @@ export function SubjectSelection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
-  // Only saved subjects get a "Manage" link — the subject page needs the
-  // selection to exist server-side, so linking an unsaved pick would 404.
-  const [savedGroups, setSavedGroups] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetch("/api/subjects")
       .then((r) => r.json())
       .then((d) => {
         const loaded = { ...EMPTY_CHOICES };
-        const saved = new Set<number>();
         for (const row of d.subjects ?? []) {
           loaded[row.groupNumber] = { subjectName: row.subjectName, level: row.level };
-          saved.add(row.groupNumber);
         }
         setChoices(loaded);
-        setSavedGroups(saved);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -66,8 +59,6 @@ export function SubjectSelection() {
         body: JSON.stringify({ subjects }),
       });
       const data = await res.json();
-      // A successful save writes all six, so every group is now manageable.
-      if (res.ok) setSavedGroups(new Set(SUBJECT_GROUPS.map((g) => g.number)));
       setMessage(res.ok ? { text: "Saved.", ok: true } : { text: data.error ?? "Could not save", ok: false });
     } finally {
       setSaving(false);
@@ -92,19 +83,9 @@ export function SubjectSelection() {
           return (
             <Card key={group.number}>
               <CardBody className="space-y-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-faint">
-                    Group {group.number} · {group.name}
-                  </p>
-                  {savedGroups.has(group.number) && (
-                    <Link
-                      href={`/subjects/${group.number}`}
-                      className="shrink-0 text-xs font-medium text-accent hover:underline"
-                    >
-                      Manage →
-                    </Link>
-                  )}
-                </div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-faint">
+                  Group {group.number} · {group.name}
+                </p>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Select
                   value={choice.subjectName}

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { SignOut } from "@/components/layout/SignIn";
 import { AppShell } from "@/components/layout/AppShell";
-import { SubjectSelection } from "@/components/features/subjects/SubjectSelection";
+import { SubjectOverview } from "@/components/features/subject-manager/SubjectOverview";
 import { Page, PageHeader } from "@/components/ui";
 
 export default async function Subjects() {
@@ -12,8 +12,8 @@ export default async function Subjects() {
   return (
     <AppShell email={session.user?.email} action={<SignOut />}>
       <Page>
-        <PageHeader title="Subjects" back={{ href: "/" }} />
-        <SubjectSelection />
+        <PageHeader title="Subjects" subtitle="Open one to track its grades, goals and notes." />
+        <SubjectOverview />
       </Page>
     </AppShell>
   );
