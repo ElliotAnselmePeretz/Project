@@ -7,74 +7,121 @@
    ========================================================================= */
 
 :root {
-  /* Warm neutrals */
-  --bg: #faf8f5;
+  /* Cool, airy neutrals to sit under the blue accent */
+  --bg: #f7fafc;
   --surface: #ffffff;
-  --surface-alt: #f5f1ea;
-  --border: #e9e1d6;
-  --border-strong: #d9cec0;
+  --surface-alt: #eef4f8;
+  --border: #dde7ee;
+  --border-strong: #c6d5e0;
 
   /* Text */
-  --fg: #2b2723;
-  --muted: #7a6f62;
-  --faint: #a89c8c;
+  --fg: #16242e;
+  --muted: #5c7080;
+  --faint: #8ba0ae;
 
-  /* Warm terracotta accent */
-  --accent: #c2622d;
-  --accent-hover: #a85222;
+  /* Light blue accent. The accent itself is deep enough to carry white text at
+     small sizes (~5:1); the airy light blue lives in --accent-soft and the glow. */
+  --accent: #0f76b4;
+  --accent-hover: #0c6296;
   --accent-fg: #ffffff;
-  --accent-soft: #fbeee3;
+  --accent-soft: #e3f1fb;
 
-  /* Semantic, warm-tinted to match */
-  --success: #4f7a3f;
-  --success-soft: #eef4e9;
-  --warning: #b5761b;
-  --warning-soft: #fdf2e0;
-  --danger: #b4402f;
-  --danger-soft: #fcecea;
-  --info: #3f6b7a;
-  --info-soft: #e9f2f5;
+  /* Decorative glow — deliberately lighter than the accent */
+  --glow-1: #5cb8e8;
+  --glow-2: #8ed0f0;
 
-  /* Shape & depth — generous radii and soft shadows read as friendly */
+  /* Semantic */
+  --success: #2f7d4f;
+  --success-soft: #e6f4ec;
+  --warning: #a8701a;
+  --warning-soft: #fdf1de;
+  --danger: #b33c31;
+  --danger-soft: #fceceb;
+  --info: #2b6f8f;
+  --info-soft: #e6f2f7;
+
+  /* Shape & depth */
   --radius-sm: 0.5rem;
   --radius: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
-  --shadow-sm: 0 1px 2px rgb(74 59 42 / 0.05);
-  --shadow: 0 2px 8px rgb(74 59 42 / 0.06);
-  --shadow-lg: 0 8px 24px rgb(74 59 42 / 0.08);
+  --shadow-sm: 0 1px 2px rgb(22 36 46 / 0.05);
+  --shadow: 0 2px 8px rgb(22 36 46 / 0.07);
+  --shadow-lg: 0 8px 24px rgb(22 36 46 / 0.10);
 }
 
+/* Follow the OS, unless the user explicitly chose light. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1a1714;
-    --surface: #241f1b;
-    --surface-alt: #2e2823;
-    --border: #3a322b;
-    --border-strong: #4a4038;
+  :root:not([data-theme="light"]) {
+  /* Warm dark neutrals to sit under the orange accent */
+  --bg: #17130f;
+  --surface: #221c17;
+  --surface-alt: #2c241d;
+  --border: #392f26;
+  --border-strong: #4b3e33;
 
-    --fg: #f4efe8;
-    --muted: #a89c8c;
-    --faint: #7a6f62;
+  --fg: #f6efe7;
+  --muted: #ab9c8b;
+  --faint: #7d7061;
 
-    --accent: #e08a52;
-    --accent-hover: #eb9a66;
-    --accent-fg: #1a1714;
-    --accent-soft: #3a2a1d;
+  /* Orange accent — light enough to read against the dark surfaces */
+  --accent: #f0873d;
+  --accent-hover: #f79b58;
+  --accent-fg: #17130f;
+  --accent-soft: #3b2617;
 
-    --success: #8fbc7a;
-    --success-soft: #24301f;
-    --warning: #dfa85c;
-    --warning-soft: #352a18;
-    --danger: #e08573;
-    --danger-soft: #3a231e;
-    --info: #85b3c4;
-    --info-soft: #1e2c33;
+  --glow-1: #f0873d;
+  --glow-2: #d9602a;
 
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-    --shadow: 0 2px 8px rgb(0 0 0 / 0.35);
-    --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.45);
+  --success: #86bd77;
+  --success-soft: #22301d;
+  --warning: #e0a95c;
+  --warning-soft: #362817;
+  --danger: #e58573;
+  --danger-soft: #3a221d;
+  --info: #7fb6cc;
+  --info-soft: #1c2c33;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
   }
+}
+
+/* An explicit choice always wins, in both directions. */
+:root[data-theme="dark"] {
+  /* Warm dark neutrals to sit under the orange accent */
+  --bg: #17130f;
+  --surface: #221c17;
+  --surface-alt: #2c241d;
+  --border: #392f26;
+  --border-strong: #4b3e33;
+
+  --fg: #f6efe7;
+  --muted: #ab9c8b;
+  --faint: #7d7061;
+
+  /* Orange accent — light enough to read against the dark surfaces */
+  --accent: #f0873d;
+  --accent-hover: #f79b58;
+  --accent-fg: #17130f;
+  --accent-soft: #3b2617;
+
+  --glow-1: #f0873d;
+  --glow-2: #d9602a;
+
+  --success: #86bd77;
+  --success-soft: #22301d;
+  --warning: #e0a95c;
+  --warning-soft: #362817;
+  --danger: #e58573;
+  --danger-soft: #3a221d;
+  --info: #7fb6cc;
+  --info-soft: #1c2c33;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
 }
 
 /* Expose the tokens as Tailwind utilities: bg-surface, text-muted, border-border… */
@@ -146,8 +193,10 @@ body {
 
 @keyframes drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  33%      { transform: translate(3%, -4%) scale(1.06); }
-  66%      { transform: translate(-3%, 3%) scale(0.96); }
+  20%      { transform: translate(14%, -9%) scale(1.14); }
+  40%      { transform: translate(-8%, 12%) scale(0.9); }
+  60%      { transform: translate(11%, 8%) scale(1.08); }
+  80%      { transform: translate(-12%, -7%) scale(0.95); }
 }
 
 @keyframes pulse-soft {
@@ -200,25 +249,28 @@ body {
 .glow-field::before {
   top: -22vmax;
   left: -14vmax;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 68%);
-  animation: drift 26s ease-in-out infinite, pulse-soft 12s ease-in-out infinite;
+  background: radial-gradient(circle, var(--glow-1) 0%, transparent 68%);
+  animation: drift 18s ease-in-out infinite, pulse-soft 9s ease-in-out infinite;
 }
 
 .glow-field::after {
   right: -18vmax;
   bottom: -24vmax;
-  background: radial-gradient(circle, var(--info) 0%, transparent 68%);
-  animation: drift 34s ease-in-out infinite reverse, pulse-soft 16s ease-in-out infinite;
+  background: radial-gradient(circle, var(--glow-2) 0%, transparent 68%);
+  animation: drift 23s ease-in-out infinite reverse, pulse-soft 11s ease-in-out infinite;
 }
 
 /* The glow is a wash of colour, not a spotlight — keep it faint on both themes. */
-:root .glow-field::before { opacity: 0.13; }
-:root .glow-field::after  { opacity: 0.10; }
+:root .glow-field::before { opacity: 0.22; }
+:root .glow-field::after  { opacity: 0.16; }
 
 @media (prefers-color-scheme: dark) {
-  :root .glow-field::before { opacity: 0.20; }
-  :root .glow-field::after  { opacity: 0.15; }
+  :root:not([data-theme="light"]) .glow-field::before { opacity: 0.26; }
+  :root:not([data-theme="light"]) .glow-field::after  { opacity: 0.19; }
 }
+
+:root[data-theme="dark"] .glow-field::before { opacity: 0.26; }
+:root[data-theme="dark"] .glow-field::after  { opacity: 0.19; }
 
 /* ============================================================================
    Respect the OS "reduce motion" setting: keep every final state, drop the

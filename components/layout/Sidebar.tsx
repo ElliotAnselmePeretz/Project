@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { href: "/", label: "Deadlines", icon: "◷" },
@@ -104,7 +105,8 @@ export function Sidebar({ email, action }: { email?: string | null; action?: Rea
           />
           <div className="animate-slide-in absolute left-0 top-0 h-full w-64 border-r border-border bg-surface p-4 pt-20 shadow-soft-lg">
             <NavLinks onNavigate={() => setOpen(false)} />
-            <div className="absolute bottom-4 left-4 right-4 space-y-2 border-t border-border pt-4">
+            <div className="absolute bottom-4 left-4 right-4 space-y-3 border-t border-border pt-4">
+              <ThemeToggle />
               {email && <p className="truncate text-xs text-faint">{email}</p>}
               {action}
             </div>
@@ -120,7 +122,8 @@ export function Sidebar({ email, action }: { email?: string | null; action?: Rea
 
         <NavLinks />
 
-        <div className="mt-auto space-y-2 border-t border-border pt-4">
+        <div className="mt-auto space-y-3 border-t border-border pt-4">
+          <ThemeToggle />
           {email && <p className="truncate px-3 text-xs text-faint">{email}</p>}
           {action}
         </div>

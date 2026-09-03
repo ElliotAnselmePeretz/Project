@@ -40,8 +40,21 @@ utilities. Change a value there and the whole site follows.
 | Shape | `rounded-sm` `rounded-md` `rounded-lg` `rounded-xl` |
 | Depth | `shadow-soft` `shadow-soft-lg` |
 
-Dark mode is automatic. It follows the OS setting, and every token has a dark
-value — so if you only use tokens, you never think about it.
+### Theming
+
+Three states, handled entirely by tokens:
+
+- **Light** — cool neutrals, light blue accent (`--accent: #0f76b4`)
+- **Dark** — warm neutrals, orange accent (`--accent: #f0873d`)
+- **System** — follows `prefers-color-scheme` (the default)
+
+A user's explicit choice sets `data-theme` on `<html>` and is stored in
+`localStorage`; "System" removes the attribute. An inline script in
+`app/layout.tsx` applies the stored theme before first paint, so there is no
+flash of the wrong theme — do not remove it.
+
+Because the accent flips hue between themes, **never assume the brand is blue**.
+Use `text-accent` / `bg-accent` and it is correct in both.
 
 ## Components
 
