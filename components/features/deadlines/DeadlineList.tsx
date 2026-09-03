@@ -93,7 +93,7 @@ export function DeadlineList() {
           hint="Add your ManageBac feed in Settings, then press Sync now."
         />
       ) : (
-        <ul className="space-y-2">
+        <ul className="stagger space-y-2">
           {deadlines.map((d) => {
             const label = dueLabel(d.dueAt);
             return (

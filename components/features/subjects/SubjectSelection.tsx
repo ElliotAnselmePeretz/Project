@@ -86,7 +86,7 @@ export function SubjectSelection() {
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="stagger space-y-3">
         {SUBJECT_GROUPS.map((group) => {
           const choice = choices[group.number];
           return (

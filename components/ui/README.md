@@ -40,8 +40,21 @@ utilities. Change a value there and the whole site follows.
 | Shape | `rounded-sm` `rounded-md` `rounded-lg` `rounded-xl` |
 | Depth | `shadow-soft` `shadow-soft-lg` |
 
-Dark mode is automatic. It follows the OS setting, and every token has a dark
-value — so if you only use tokens, you never think about it.
+### Theming
+
+Three states, handled entirely by tokens:
+
+- **Light** — cool neutrals, light blue accent (`--accent: #0f76b4`)
+- **Dark** — warm neutrals, orange accent (`--accent: #f0873d`)
+- **System** — follows `prefers-color-scheme` (the default)
+
+A user's explicit choice sets `data-theme` on `<html>` and is stored in
+`localStorage`; "System" removes the attribute. An inline script in
+`app/layout.tsx` applies the stored theme before first paint, so there is no
+flash of the wrong theme — do not remove it.
+
+Because the accent flips hue between themes, **never assume the brand is blue**.
+Use `text-accent` / `bg-accent` and it is correct in both.
 
 ## Components
 
@@ -56,6 +69,32 @@ value — so if you only use tokens, you never think about it.
 | `PageHeader` | Page title, optional subtitle, back link and action |
 | `SectionTitle` | A heading within a page, with an optional action on the right |
 | `EmptyState` | "Nothing here yet" placeholders |
+
+## Motion
+
+Use these rather than writing keyframes in a component:
+
+| Class | Effect |
+| --- | --- |
+| `animate-fade-up` | Fade in while rising slightly — page and section entrances |
+| `animate-fade-in` | Plain fade — overlays and backdrops |
+| `animate-slide-in` | Slide in from the left — the mobile drawer |
+| `stagger` | On a parent: children enter one after another |
+
+Hover and press states are built into the primitives (cards lift, buttons press
+in), so you rarely need to add them yourself.
+
+**Every animation is switched off by `prefers-reduced-motion`**, handled globally
+in `globals.css`. Do not write inline keyframes that bypass it — drifting
+backgrounds and moving content can be genuinely unpleasant for people with
+vestibular disorders.
+
+## Ambient glow
+
+`AppShell` renders a `.glow-field` — two slow-drifting blurred blobs behind
+everything, built from `--accent` and `--info`. It is decorative and
+`aria-hidden`. Adjust the intensity via the `.glow-field::before/::after`
+opacity rules in `globals.css`.
 
 ## Adding a component
 

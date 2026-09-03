@@ -11,5 +11,5 @@ const TONES: Record<Tone, string> = {
 };
 
 export function Banner({ tone = "info", children }: { tone?: Tone; children: ReactNode }) {
-  return <div className={`rounded-md border p-3 text-sm ${TONES[tone]}`}>{children}</div>;
+  return <div className={`animate-fade-up rounded-md border p-3 text-sm ${TONES[tone]}`}>{children}</div>;
 }
