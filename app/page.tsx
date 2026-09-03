@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { getSession, isPreview } from "@/lib/session";
 import { SignIn, SignOut } from "@/components/SignIn";
 import { Dashboard } from "@/components/Dashboard";
 import { SetupNeeded } from "@/components/SetupNeeded";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSession();
 
   // Without these, Auth.js sends client_id=undefined and Microsoft answers with
   // a bare "AADSTS900144" page that says nothing about what to fix.
@@ -13,7 +13,7 @@ export default async function Home() {
     Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_ID) &&
     Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET);
 
-  if (!session && !configured) return <SetupNeeded />;
+  if (!session && !configured && !isPreview) return <SetupNeeded />;
 
   if (!session) {
     return (
@@ -49,6 +49,14 @@ export default async function Home() {
           <SignOut />
         </div>
       </header>
+
+      {isPreview && (
+        <p className="mb-4 rounded-lg border border-purple-300 bg-purple-50 p-3 text-sm text-purple-900 dark:bg-purple-950/30 dark:text-purple-200">
+          <strong>Preview mode.</strong> Sign-in is bypassed for local development, so this is
+          not a real account. Outlook sync will not work; ManageBac will. Unset{" "}
+          <code>DEV_PREVIEW</code> in <code>.env</code> to turn this off.
+        </p>
+      )}
 
       {session.error === "RefreshFailed" && (
         <p className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-200">
