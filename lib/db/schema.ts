@@ -67,7 +67,9 @@ export type NewSubjectSelection = typeof subjectSelections.$inferInsert;
  */
 export const pets = sqliteTable("pets", {
   userId: text("user_id").primaryKey(),
-  species: text("species", { enum: ["nimbus", "sprout", "ember"] }).notNull(),
+  species: text("species", {
+    enum: ["nimbus", "sprout", "ember", "pebble", "ripple", "moth", "star", "blot"],
+  }).notNull(),
   name: text("name").notNull(),
   hunger: real("hunger").notNull().default(100),
   xp: integer("xp").notNull().default(0),

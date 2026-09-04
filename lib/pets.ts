@@ -8,7 +8,16 @@
  * Kept free of database and React so it can be tested directly.
  */
 
-export const SPECIES = ["nimbus", "sprout", "ember"] as const;
+export const SPECIES = [
+  "nimbus",
+  "sprout",
+  "ember",
+  "pebble",
+  "ripple",
+  "moth",
+  "star",
+  "blot",
+] as const;
 export type Species = (typeof SPECIES)[number];
 
 export interface SpeciesInfo {
@@ -38,11 +47,42 @@ export const SPECIES_INFO: Record<Species, SpeciesInfo> = {
     tagline: "A small flame. Bright when fed, dim when neglected.",
     hue: { body: "#f0a35e", accent: "#d9702c" },
   },
+  pebble: {
+    id: "pebble",
+    name: "Pebble",
+    tagline: "A mossy little stone. Unbothered by almost everything.",
+    hue: { body: "#a9a49b", accent: "#79a06a" },
+  },
+  ripple: {
+    id: "ripple",
+    name: "Ripple",
+    tagline: "A droplet that never quite settles. Wobbles when happy.",
+    hue: { body: "#7fc4dd", accent: "#3d92b5" },
+  },
+  moth: {
+    id: "moth",
+    name: "Moth",
+    tagline: "Drawn to late-night revision lamps. Dusty and loyal.",
+    hue: { body: "#c8b6a0", accent: "#8a7460" },
+  },
+  star: {
+    id: "star",
+    name: "Star",
+    tagline: "Small, bright, and quietly pleased with your progress.",
+    hue: { body: "#f2d06b", accent: "#d9a626" },
+  },
+  blot: {
+    id: "blot",
+    name: "Blot",
+    tagline: "Spilled ink that decided to stay. Fond of essays.",
+    hue: { body: "#8b8fb0", accent: "#4d5273" },
+  },
 };
 
-/** Hunger is 0–100. It falls to zero over three days of neglect. */
+/** Hunger is 0–100. It falls to zero over two days of neglect. */
 export const MAX_HUNGER = 100;
-const HUNGER_LOST_PER_HOUR = MAX_HUNGER / 72;
+export const HUNGER_EMPTY_HOURS = 48;
+const HUNGER_LOST_PER_HOUR = MAX_HUNGER / HUNGER_EMPTY_HOURS;
 
 export const XP_PER_FEED = 10;
 export const HUNGER_PER_FEED = 25;

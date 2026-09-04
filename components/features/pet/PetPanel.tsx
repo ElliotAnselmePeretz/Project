@@ -5,7 +5,7 @@ import { SPECIES_INFO, MAX_HUNGER, type Mood, type Species } from "@/lib/pets";
 import { PetCreature } from "./PetCreature";
 import { PetChooser } from "./PetChooser";
 import Link from "next/link";
-import { Badge, Banner, Button, Card, CardBody } from "@/components/ui";
+import { Badge, Banner, Button, Card, CardBody, Input } from "@/components/ui";
 
 export interface PetView {
   species: Species;
@@ -17,6 +17,7 @@ export interface PetView {
   progress: number;
   meals: number;
   hidden: boolean;
+  lastFedAt: string;
 }
 
 const MOOD_COPY: Record<Mood, string> = {
@@ -25,6 +26,15 @@ const MOOD_COPY: Record<Mood, string> = {
   hungry: "Getting peckish.",
   sad: "Feeling neglected.",
 };
+
+function sinceFed(iso: string): string {
+  const hours = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  if (hours < 1) return "Fed just now";
+  if (hours < 2) return "Fed an hour ago";
+  if (hours < 24) return `Fed ${Math.floor(hours)} hours ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "Fed yesterday" : `Fed ${days} days ago`;
+}
 
 const MOOD_TONE: Record<Mood, "success" | "neutral" | "warning" | "danger"> = {
   happy: "success",
@@ -38,6 +48,8 @@ export function PetPanel({ compact = false }: { compact?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [justFed, setJustFed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/pet");
@@ -131,22 +143,64 @@ export function PetPanel({ compact = false }: { compact?: boolean }) {
 
           <div className={`min-w-0 flex-1 ${compact ? "" : "text-center"}`}>
             <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
-              <p className="truncate font-medium text-fg">{pet.name}</p>
-              <Badge tone="accent">Lv {pet.level}</Badge>
-              <Badge tone={MOOD_TONE[pet.mood]}>{MOOD_COPY[pet.mood]}</Badge>
+              {renaming && !compact ? (
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (await act({ action: "rename", name: draftName })) setRenaming(false);
+                  }}
+                >
+                  <Input
+                    autoFocus
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    maxLength={24}
+                    aria-label="Pet name"
+                    className="w-40"
+                  />
+                  <Button type="submit" variant="primary" size="sm">
+                    Save
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setRenaming(false)}>
+                    Cancel
+                  </Button>
+                </form>
+              ) : (
+                <>
+                  <p className="truncate font-medium text-fg">{pet.name}</p>
+                  {!compact && (
+                    <button
+                      onClick={() => {
+                        setDraftName(pet.name);
+                        setRenaming(true);
+                      }}
+                      className="rounded-sm px-1 text-xs text-faint transition-colors hover:text-accent"
+                      title="Rename"
+                      aria-label={`Rename ${pet.name}`}
+                    >
+                      ✎
+                    </button>
+                  )}
+                  <Badge tone="accent">Lv {pet.level}</Badge>
+                  <Badge tone={MOOD_TONE[pet.mood]}>{MOOD_COPY[pet.mood]}</Badge>
+                </>
+              )}
             </div>
 
             {/* Hunger */}
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-muted">
-                <span>Hunger</span>
+                <span>{sinceFed(pet.lastFedAt)}</span>
                 <span>
                   {pet.hunger}/{MAX_HUNGER}
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
                 <div
-                  className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out"
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${
+                    pet.mood === "sad" ? "bg-danger" : pet.mood === "hungry" ? "bg-warning" : "bg-accent"
+                  }`}
                   style={{ width: `${pet.hunger}%` }}
                 />
               </div>
@@ -187,6 +241,13 @@ export function PetPanel({ compact = false }: { compact?: boolean }) {
           </div>
         </CardBody>
       </Card>
+
+      {(pet.mood === "hungry" || pet.mood === "sad") && (
+        <Banner tone={pet.mood === "sad" ? "danger" : "warning"}>
+          {pet.name} is {pet.mood === "sad" ? "very hungry" : "getting hungry"}.{" "}
+          {pet.meals > 0 ? "Feed them?" : "Complete a deadline to earn a meal."}
+        </Banner>
+      )}
 
       {message && <Banner tone="success">{message}</Banner>}
     </div>

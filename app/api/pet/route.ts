@@ -17,6 +17,7 @@ function present(pet: typeof schema.pets.$inferSelect) {
     progress: levelProgress(pet.xp),
     meals: pet.meals,
     hidden: pet.hidden,
+    lastFedAt: pet.lastFedAt.toISOString(),
   };
 }
 

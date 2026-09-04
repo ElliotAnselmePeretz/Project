@@ -15,7 +15,8 @@ const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000);
 
 test("hunger decays over time and bottoms out at zero", () => {
   assert.equal(currentHunger(100, NOW, NOW), 100);
-  assert.ok(Math.abs(currentHunger(100, hoursAgo(36), NOW) - 50) < 0.1);
+  assert.ok(Math.abs(currentHunger(100, hoursAgo(24), NOW) - 50) < 0.1);
+  assert.equal(currentHunger(100, hoursAgo(48), NOW), 0);
   assert.equal(currentHunger(100, hoursAgo(500), NOW), 0);
 });
 
