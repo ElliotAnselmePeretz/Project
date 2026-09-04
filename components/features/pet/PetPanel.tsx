@@ -43,7 +43,7 @@ const MOOD_TONE: Record<Mood, "success" | "neutral" | "warning" | "danger"> = {
   sad: "danger",
 };
 
-export function PetPanel({ compact = false }: { compact?: boolean }) {
+export function PetPanel({ compact = false, refreshKey = 0 }: { compact?: boolean; refreshKey?: number }) {
   const [pet, setPet] = useState<PetView | null>(null);
   const [loading, setLoading] = useState(true);
   const [justFed, setJustFed] = useState(false);
@@ -59,7 +59,7 @@ export function PetPanel({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   async function act(body: Record<string, unknown>) {
     const res = await fetch("/api/pet", {

@@ -37,8 +37,24 @@ export function ensureSchema() {
         source_url TEXT,
         confidence REAL NOT NULL DEFAULT 1,
         dismissed INTEGER NOT NULL DEFAULT 0,
+        completed_at INTEGER,
+        meal_awarded INTEGER NOT NULL DEFAULT 0,
+        subject TEXT,
         updated_at INTEGER DEFAULT (unixepoch())
       )`);
+    // Existing databases predate these columns; SQLite has no IF NOT EXISTS for
+    // ADD COLUMN, so attempt each and ignore the duplicate-column error.
+    for (const col of [
+      "completed_at INTEGER",
+      "meal_awarded INTEGER NOT NULL DEFAULT 0",
+      "subject TEXT",
+    ]) {
+      try {
+        await client.execute(`ALTER TABLE deadlines ADD COLUMN ${col}`);
+      } catch {
+        /* column already present */
+      }
+    }
     await client.execute(`
       CREATE TABLE IF NOT EXISTS pets (
         user_id TEXT PRIMARY KEY,

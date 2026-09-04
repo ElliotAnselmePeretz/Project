@@ -25,13 +25,22 @@ export const deadlines = sqliteTable(
     title: text("title").notNull(),
     description: text("description"),
     dueAt: integer("due_at", { mode: "timestamp" }).notNull(),
-    source: text("source", { enum: ["managebac", "outlook"] }).notNull(),
+    source: text("source", { enum: ["managebac", "outlook", "manual"] }).notNull(),
     /** Stable id from the source system, so re-syncing updates instead of duplicating. */
     sourceKey: text("source_key").notNull(),
     sourceUrl: text("source_url"),
     /** 1.0 for an explicit calendar date; lower when inferred from email prose. */
     confidence: real("confidence").notNull().default(1),
     dismissed: integer("dismissed", { mode: "boolean" }).notNull().default(false),
+    completedAt: integer("completed_at", { mode: "timestamp" }),
+    /**
+     * Whether this deadline has ever paid out a meal. Completing is now
+     * reversible, so without this a user could un-complete and re-complete the
+     * same item forever to farm meals.
+     */
+    mealAwarded: integer("meal_awarded", { mode: "boolean" }).notNull().default(false),
+    /** Optional link to an IB group, so deadlines can be filtered by subject. */
+    subject: text("subject"),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
   },
   (t) => [

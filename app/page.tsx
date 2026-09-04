@@ -2,8 +2,7 @@ import { getSession, isLocalMode, microsoftConfigured } from "@/lib/session";
 import { SignIn, SignOut } from "@/components/layout/SignIn";
 import { SetupNeeded } from "@/components/layout/SetupNeeded";
 import { AppShell } from "@/components/layout/AppShell";
-import { DeadlineList } from "@/components/features/deadlines/DeadlineList";
-import { PetPanel } from "@/components/features/pet/PetPanel";
+import { Dashboard } from "@/components/features/deadlines/Dashboard";
 import { Page, PageHeader, Banner } from "@/components/ui";
 
 export default async function Home() {
@@ -51,9 +50,7 @@ export default async function Home() {
             </Banner>
           )}
 
-          <PetPanel compact />
-
-          <DeadlineList />
+          <Dashboard />
         </div>
       </Page>
     </AppShell>

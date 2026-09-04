@@ -25,7 +25,7 @@ components/features/<feature>/   one folder per feature, built from ui/
 lib/                             server logic, integrations, database
 ```
 
-Features so far: `deadlines/`, `subjects/`, `pet/`.
+Features so far: `deadlines/` (manual + synced, streaks), `subjects/`, `pet/`.
 
 New feature? Add `components/features/<your-feature>/` and a route under `app/`.
 Keep feature code inside its own folder — that is what stops two people
