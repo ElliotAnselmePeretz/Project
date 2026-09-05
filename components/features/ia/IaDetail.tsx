@@ -69,7 +69,7 @@ export function IaDetail({ group }: { group: number }) {
           About this {data.label}
         </LinkButton>
         <LinkButton href={`/subjects/${group}`} size="lg">
-          Grades, goals &amp; notes
+          Goals &amp; notes
         </LinkButton>
       </div>
 

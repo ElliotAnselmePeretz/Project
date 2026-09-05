@@ -184,6 +184,77 @@ export const iaFeedback = sqliteTable(
   (t) => [index("ia_feedback_user_group").on(t.userId, t.groupNumber)],
 );
 
+/** The extended essay — one per student, so the user id alone keys it. */
+export const extendedEssays = sqliteTable("extended_essays", {
+  userId: text("user_id").primaryKey(),
+  title: text("title"),
+  researchQuestion: text("research_question"),
+  /** The subject the essay is registered in — free text, since it need not be one of the six. */
+  subject: text("subject"),
+  topic: text("topic"),
+  supervisor: text("supervisor"),
+  stage: text("stage"),
+  wordCount: integer("word_count"),
+  wordLimit: integer("word_limit"),
+  /** A to E, unlike a subject's 1 to 7. */
+  predictedGrade: text("predicted_grade"),
+  draftDueAt: integer("draft_due_at", { mode: "timestamp" }),
+  finalDueAt: integer("final_due_at", { mode: "timestamp" }),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+});
+
+/**
+ * The three formal reflection sessions. Fixed slots rather than a list, since
+ * there are exactly three and the last one is the viva voce.
+ */
+export const eeReflections = sqliteTable(
+  "ee_reflections",
+  {
+    userId: text("user_id").notNull(),
+    sessionKey: text("session_key").notNull(),
+    body: text("body"),
+    heldAt: integer("held_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.sessionKey] })],
+);
+
+/**
+ * Goals and notes for the areas that are not subjects — EE, TOK, CAS — sharing
+ * a scope string so a new area needs a route rather than new tables.
+ */
+export const workGoals = sqliteTable(
+  "work_goals",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    scope: text("scope").notNull(),
+    text: text("text").notNull(),
+    done: integer("done", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("work_goals_user_scope").on(t.userId, t.scope)],
+);
+
+export const workNotes = sqliteTable(
+  "work_notes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    scope: text("scope").notNull(),
+    title: text("title"),
+    body: text("body").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("work_notes_user_scope").on(t.userId, t.scope)],
+);
+
+export type ExtendedEssay = typeof extendedEssays.$inferSelect;
+export type EeReflection = typeof eeReflections.$inferSelect;
+export type WorkGoal = typeof workGoals.$inferSelect;
+export type WorkNote = typeof workNotes.$inferSelect;
+
 export type SubjectIa = typeof subjectIas.$inferSelect;
 export type IaCriterion = typeof iaCriteria.$inferSelect;
 export type IaFeedbackEntry = typeof iaFeedback.$inferSelect;
