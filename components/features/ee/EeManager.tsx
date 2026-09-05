@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Banner, Card, CardBody, CardHeader, Field, Input, LinkButton, Meter, Select } from "@/components/ui";
-import { EE_STAGES, EE_REFLECTIONS, EE_GRADES, eeStageIndex, reflectionsDone } from "@/lib/ee";
+import { EE_STAGES, EE_REFLECTIONS, eeStageIndex, reflectionsDone } from "@/lib/ee";
 import { lengthFraction } from "@/lib/ia";
 import { SUBJECT_GROUPS } from "@/lib/ib-subjects";
 
@@ -132,17 +132,45 @@ export function EeManager() {
 
   return (
     <div className="stagger space-y-5">
-      <div className="flex flex-wrap items-center gap-2">
-        {essay?.predictedGrade && <Badge tone="accent">Predicted {essay.predictedGrade}</Badge>}
-        <Badge tone={done === 3 ? "success" : "neutral"}>{done}/3 reflections</Badge>
-      </div>
+      <Card>
+        <CardBody className="flex flex-wrap items-center gap-x-8 gap-y-4">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="grid h-16 w-16 shrink-0 place-items-center rounded-lg bg-accent-soft text-3xl font-semibold text-accent"
+            >
+              {essay?.predictedGrade ?? "—"}
+            </span>
+            <div>
+              <p className="text-sm font-medium text-fg">Predicted grade</p>
+              <p className="text-xs text-muted">
+                {essay?.predictedGrade ? "Graded A to E" : "Not set yet"}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-2xl font-semibold tabular-nums text-fg">{done}/3</p>
+            <p className="text-xs text-muted">reflections written</p>
+          </div>
+
+          {limit != null && count != null && (
+            <div>
+              <p className="text-2xl font-semibold tabular-nums text-fg">
+                {Math.round((count / limit) * 100)}%
+              </p>
+              <p className="text-xs text-muted">of the word limit</p>
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <LinkButton href="/ee/goals" size="lg">
-          Goals
+        <LinkButton href="/ee/about" size="lg">
+          About the EE
         </LinkButton>
-        <LinkButton href="/ee/notes" size="lg">
-          Notes
+        <LinkButton href="/ee/work" size="lg">
+          Goals, notes &amp; predicted
         </LinkButton>
       </div>
 
@@ -245,32 +273,17 @@ export function EeManager() {
             </Field>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Supervisor">
-              <Input
-                value={form.supervisor}
-                disabled={busy}
-                onChange={(e) => setForm({ ...form, supervisor: e.target.value })}
-                onBlur={(e) => save({ supervisor: e.target.value })}
-                placeholder="Teacher's name"
-              />
-            </Field>
-
-            <Field label="Predicted grade" hint="The EE is graded A to E.">
-              <Select
-                value={essay?.predictedGrade ?? ""}
-                disabled={busy}
-                onChange={(e) => save({ predictedGrade: e.target.value || null })}
-              >
-                <option value="">—</option>
-                {EE_GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
+          {/* Predicted grade lives on the Goals, notes & predicted page, so
+              there is one place to set it and one place to read it. */}
+          <Field label="Supervisor">
+            <Input
+              value={form.supervisor}
+              disabled={busy}
+              onChange={(e) => setForm({ ...form, supervisor: e.target.value })}
+              onBlur={(e) => save({ supervisor: e.target.value })}
+              placeholder="Teacher's name"
+            />
+          </Field>
 
           <div>
             <div className="grid grid-cols-2 gap-3">

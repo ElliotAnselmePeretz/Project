@@ -2,10 +2,10 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { SignOut } from "@/components/layout/SignIn";
 import { AppShell } from "@/components/layout/AppShell";
-import { WorkGoals } from "@/components/features/work/WorkGoals";
+import { EeAbout } from "@/components/features/ee/EeAbout";
 import { Page, PageHeader } from "@/components/ui";
 
-export default async function EeGoals() {
+export default async function EeAboutPage() {
   const session = await getSession();
   if (!session) redirect("/");
 
@@ -13,11 +13,11 @@ export default async function EeGoals() {
     <AppShell email={session.user?.email} action={<SignOut />}>
       <Page>
         <PageHeader
-          title="Extended essay goals"
-          subtitle="What you're breaking the essay into."
+          title="About the EE"
+          subtitle="What the extended essay involves."
           back={{ href: "/ee", label: "Extended essay" }}
         />
-        <WorkGoals scope="ee" hint="Break a 4,000-word project into pieces you can actually finish." />
+        <EeAbout />
       </Page>
     </AppShell>
   );
