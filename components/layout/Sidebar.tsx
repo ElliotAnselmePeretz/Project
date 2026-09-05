@@ -101,28 +101,25 @@ function NavLink({
 function NavGroupLinks({
   group,
   pathname,
+  open,
+  onToggle,
   onNavigate,
 }: {
   group: NavGroup;
   pathname: string;
+  open: boolean;
+  onToggle: () => void;
   onNavigate?: () => void;
 }) {
   const hasActiveChild = group.children.some((child) => isActive(pathname, child.href));
-  const [open, setOpen] = useState(hasActiveChild);
-
-  // Opening on navigation means landing on /ee never leaves the group shut with
-  // the current page hidden inside it.
-  useEffect(() => {
-    if (hasActiveChild) setOpen(true);
-  }, [hasActiveChild]);
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         aria-expanded={open}
-        className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200 ${
+        className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-200 ${
           hasActiveChild && !open
             ? "font-medium text-accent"
             : "text-muted hover:bg-surface-alt hover:text-fg"
@@ -173,16 +170,16 @@ function NavGroupLinks({
 function NavItemWithReveals({
   item,
   pathname,
+  show,
   onNavigate,
 }: {
   item: NavItem;
   pathname: string;
+  show: boolean;
   onNavigate?: () => void;
 }) {
   const parentActive = isActive(pathname, item.href);
   const revealed = item.reveals ?? [];
-  const childActive = revealed.some((child) => isActive(pathname, child.href));
-  const show = parentActive || childActive;
 
   return (
     <div>
@@ -211,18 +208,45 @@ function NavItemWithReveals({
   );
 }
 
+/**
+ * Which section the current page belongs to, by label — the section the menu
+ * opens by itself so the page you are on is never hidden inside a shut menu.
+ */
+function sectionForPath(pathname: string): string | null {
+  for (const entry of NAV) {
+    if (isGroup(entry)) {
+      if (entry.children.some((c) => isActive(pathname, c.href))) return entry.label;
+    } else if (entry.reveals?.length) {
+      const here =
+        isActive(pathname, entry.href) || entry.reveals.some((c) => isActive(pathname, c.href));
+      if (here) return entry.label;
+    }
+  }
+  return null;
+}
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
+  // Exactly one section is open at a time, so opening DP core puts away the
+  // links under Subjects rather than stacking two open sections.
+  const [expanded, setExpanded] = useState(() => sectionForPath(pathname));
+
+  // Follow the page again after navigating.
+  useEffect(() => setExpanded(sectionForPath(pathname)), [pathname]);
+
   return (
-    <nav className="stagger space-y-1">
+    <nav className="space-y-1">
       {NAV.map((entry) => {
         if (isGroup(entry)) {
+          const open = expanded === entry.label;
           return (
             <NavGroupLinks
               key={entry.label}
               group={entry}
               pathname={pathname}
+              open={open}
+              onToggle={() => setExpanded(open ? null : entry.label)}
               onNavigate={onNavigate}
             />
           );
@@ -234,6 +258,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               key={entry.href}
               item={entry}
               pathname={pathname}
+              show={expanded === entry.label}
               onNavigate={onNavigate}
             />
           );
@@ -321,7 +346,9 @@ export function Sidebar({ email, action }: { email?: string | null; action?: Rea
 
       {/* Desktop sidebar */}
       <aside className="fixed left-0 top-0 z-20 hidden h-screen w-60 flex-col border-r border-border bg-surface/60 p-4 backdrop-blur md:flex">
-        <div className="animate-fade-in mb-8 px-1 pt-1">
+        {/* No entrance animation here: the sidebar remounts on every
+            navigation, so anything that animates in replays on each page. */}
+        <div className="mb-8 px-1 pt-1">
           <Brand />
         </div>
 
