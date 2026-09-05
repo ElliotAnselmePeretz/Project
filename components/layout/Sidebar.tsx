@@ -5,50 +5,178 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+}
+
+interface NavGroup {
+  label: string;
+  icon: string;
+  children: NavItem[];
+}
+
+type NavEntry = NavItem | NavGroup;
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return "children" in entry;
+}
+
+const NAV: NavEntry[] = [
   { href: "/", label: "Deadlines", icon: "◷" },
   { href: "/subjects", label: "Subjects", icon: "◈" },
-  { href: "/ia", label: "IA", icon: "▤" },
-  // The DP core: EE, TOK and CAS sit together, in the order students meet them.
-  { href: "/ee", label: "EE", icon: "❐" },
-  { href: "/tok", label: "TOK", icon: "◍" },
-  { href: "/cas", label: "CAS", icon: "❖" },
+  {
+    // Grouped so the sidebar stays short. Everything the diploma asks for
+    // outside your subjects lives in here.
+    label: "DP core",
+    icon: "◆",
+    children: [
+      { href: "/ia", label: "IA", icon: "▤" },
+      { href: "/ee", label: "EE", icon: "❐" },
+      { href: "/tok", label: "TOK", icon: "◍" },
+      { href: "/cas", label: "CAS", icon: "❖" },
+    ],
+  },
   { href: "/extracurricular", label: "Extracurricular", icon: "◎" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
+
+/**
+ * "/" only matches itself; everything else matches its sub-pages too, so
+ * /subjects/4/ia keeps Subjects lit rather than nothing at all.
+ */
+function isActive(pathname: string, href: string): boolean {
+  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavLink({
+  item,
+  active,
+  nested,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  nested?: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={`group relative flex items-center gap-3 rounded-md py-2 text-sm transition-all duration-200 ${
+        nested ? "pl-3 pr-3" : "px-3"
+      } ${
+        active
+          ? "bg-accent-soft font-medium text-accent"
+          : "text-muted hover:translate-x-0.5 hover:bg-surface-alt hover:text-fg"
+      }`}
+    >
+      {/* Active marker grows in from nothing rather than appearing abruptly. */}
+      <span
+        className={`absolute left-0 top-1/2 w-0.5 -translate-y-1/2 rounded-full bg-accent transition-all duration-300 ${
+          active ? "h-5 opacity-100" : "h-0 opacity-0"
+        }`}
+      />
+      <span className="text-base leading-none transition-transform duration-200 group-hover:scale-110">
+        {item.icon}
+      </span>
+      {item.label}
+    </Link>
+  );
+}
+
+function NavGroupLinks({
+  group,
+  pathname,
+  onNavigate,
+}: {
+  group: NavGroup;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const hasActiveChild = group.children.some((child) => isActive(pathname, child.href));
+  const [open, setOpen] = useState(hasActiveChild);
+
+  // Opening on navigation means landing on /ee never leaves the group shut with
+  // the current page hidden inside it.
+  useEffect(() => {
+    if (hasActiveChild) setOpen(true);
+  }, [hasActiveChild]);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200 ${
+          hasActiveChild && !open
+            ? "font-medium text-accent"
+            : "text-muted hover:bg-surface-alt hover:text-fg"
+        }`}
+      >
+        <span className="text-base leading-none transition-transform duration-200 group-hover:scale-110">
+          {group.icon}
+        </span>
+        {group.label}
+        <span
+          aria-hidden="true"
+          className={`ml-auto text-[10px] transition-transform duration-300 ${open ? "rotate-90" : ""}`}
+        >
+          ▸
+        </span>
+      </button>
+
+      {/* Rows animate open by growing their grid track — no fixed height to
+          keep in sync with the number of children. */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+            {group.children.map((child) => (
+              <NavLink
+                key={child.href}
+                item={child}
+                active={isActive(pathname, child.href)}
+                nested
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="stagger space-y-1">
-      {NAV.map((item) => {
-        const active = pathname === item.href;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={`group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200 ${
-              active
-                ? "bg-accent-soft font-medium text-accent"
-                : "text-muted hover:translate-x-0.5 hover:bg-surface-alt hover:text-fg"
-            }`}
-          >
-            {/* Active marker grows in from nothing rather than appearing abruptly. */}
-            <span
-              className={`absolute left-0 top-1/2 w-0.5 -translate-y-1/2 rounded-full bg-accent transition-all duration-300 ${
-                active ? "h-5 opacity-100" : "h-0 opacity-0"
-              }`}
-            />
-            <span className="text-base leading-none transition-transform duration-200 group-hover:scale-110">
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        );
-      })}
+      {NAV.map((entry) =>
+        isGroup(entry) ? (
+          <NavGroupLinks
+            key={entry.label}
+            group={entry}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
+        ) : (
+          <NavLink
+            key={entry.href}
+            item={entry}
+            active={isActive(pathname, entry.href)}
+            onNavigate={onNavigate}
+          />
+        ),
+      )}
     </nav>
   );
 }
