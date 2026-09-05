@@ -140,12 +140,16 @@ function NavGroupLinks({
       {/* Rows animate open by growing their grid track — no fixed height to
           keep in sync with the number of children. */}
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ${
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
         <div className="overflow-hidden">
-          <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+          <div
+            className={`ml-4 mt-1 space-y-1 border-l border-border pl-2 transition-opacity duration-300 ${
+              open ? "opacity-100" : "opacity-0"
+            }`}
+          >
             {group.children.map((child) => (
               <NavLink
                 key={child.href}
@@ -186,12 +190,16 @@ function NavItemWithReveals({
       <NavLink item={item} active={parentActive} onNavigate={onNavigate} />
 
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ${
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
           show ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
         <div className="overflow-hidden">
-          <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+          <div
+            className={`ml-4 mt-1 space-y-1 border-l border-border pl-2 transition-opacity duration-300 ${
+              show ? "opacity-100" : "opacity-0"
+            }`}
+          >
             {revealed.map((child) => (
               <NavLink
                 key={child.href}
@@ -230,10 +238,17 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
   // Exactly one section is open at a time, so opening DP core puts away the
   // links under Subjects rather than stacking two open sections.
-  const [expanded, setExpanded] = useState(() => sectionForPath(pathname));
+  //
+  // Starts closed even when the current page belongs to a section: the sidebar
+  // remounts on every navigation, and a CSS transition does not run on the
+  // first paint. Opening it a frame later is what makes the curtain actually
+  // play instead of the links simply being there.
+  const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Follow the page again after navigating.
-  useEffect(() => setExpanded(sectionForPath(pathname)), [pathname]);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setExpanded(sectionForPath(pathname)));
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
 
   return (
     <nav className="space-y-1">
