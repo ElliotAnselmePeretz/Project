@@ -28,13 +28,22 @@ function write(value: Running | null) {
   }
 }
 
+const SIZE = 60;
+const STROKE = 5;
+const RADIUS = (SIZE - STROKE) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
 /**
- * A timer for one study block.
+ * A countdown ring for one study block.
  *
- * The start time is kept in localStorage rather than in React state, so a
- * reload or an accidental navigation mid-block does not lose the count. Elapsed
- * time is derived from the timestamp, not accumulated by the interval — an
- * interval that stops firing in a background tab would otherwise undercount.
+ * The ring starts full and depletes, so "how much is left" is readable at a
+ * glance without doing arithmetic on a clock. It is drawn in `--accent`, which
+ * is blue in light mode and orange in dark, so it needs no theme logic here.
+ *
+ * The start time lives in localStorage rather than React state, so a reload
+ * mid-block does not lose the count, and elapsed time is derived from that
+ * timestamp rather than accumulated by the interval — an interval throttled in
+ * a background tab would otherwise undercount badly.
  */
 export function BlockTimer({
   blockId,
@@ -55,7 +64,7 @@ export function BlockTimer({
 
   useEffect(() => {
     if (startedAt === null) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [startedAt]);
 
@@ -82,27 +91,70 @@ export function BlockTimer({
     );
   }
 
-  const elapsedSeconds = Math.max(0, Math.floor((now - startedAt) / 1000));
-  const mm = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0");
-  const ss = String(elapsedSeconds % 60).padStart(2, "0");
-  const over = elapsedSeconds > plannedMinutes * 60;
+  const totalSeconds = Math.max(1, plannedMinutes * 60);
+  const elapsedSeconds = Math.max(0, (now - startedAt) / 1000);
+  const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+  const done = remaining <= 0;
+
+  // Full ring at the start, empty when the time is up.
+  const fraction = remaining / totalSeconds;
+  const offset = CIRCUMFERENCE * (1 - fraction);
+
+  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+  const ss = String(Math.floor(remaining % 60)).padStart(2, "0");
 
   return (
     <div className="flex items-center gap-2">
-      <span
-        className={`tabular-nums text-sm font-semibold ${over ? "text-warning" : "text-accent"}`}
-        aria-live="off"
-      >
-        {mm}:{ss}
-      </span>
-      {/* A quiet pulse so a running timer is obvious without being loud. */}
-      <span className="relative flex h-2 w-2" aria-hidden="true">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-      </span>
-      <Button size="sm" variant="primary" onClick={stop}>
-        Stop
-      </Button>
+      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+        <svg
+          width={SIZE}
+          height={SIZE}
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="-rotate-90"
+          role="img"
+          aria-label={done ? "Block finished" : `${mm} minutes ${ss} seconds remaining`}
+        >
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            fill="none"
+            stroke="var(--border)"
+            strokeWidth={STROKE}
+          />
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            fill="none"
+            stroke={done ? "var(--success)" : "var(--accent)"}
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={done ? CIRCUMFERENCE : offset}
+            style={{ transition: "stroke-dashoffset 0.3s linear, stroke 0.4s ease" }}
+          />
+        </svg>
+
+        <span className="absolute inset-0 grid place-items-center">
+          {done ? (
+            <span className="animate-check text-[10px] font-semibold uppercase tracking-wide text-success">
+              Done
+            </span>
+          ) : (
+            <span className="text-[13px] font-semibold tabular-nums text-fg">
+              {mm}:{ss}
+            </span>
+          )}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        {done && <span className="text-xs font-medium text-success">Finished</span>}
+        <Button size="sm" variant={done ? "primary" : "secondary"} onClick={stop}>
+          {done ? "Log it" : "Stop"}
+        </Button>
+      </div>
     </div>
   );
 }
