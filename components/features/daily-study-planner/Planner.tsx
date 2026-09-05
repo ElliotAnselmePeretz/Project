@@ -5,10 +5,10 @@ import type { Focus } from "@/lib/daily-study-planner";
 import { Banner } from "@/components/ui";
 import { CheckIn } from "./CheckIn";
 import { PlanView } from "./PlanView";
-import { localDate, type Block, type CandidateTask, type Checkin, type PlanResponse } from "./types";
+import { localDate, localTime, type Block, type CandidateTask, type Checkin, type PlanResponse } from "./types";
 
 export function Planner() {
-  const [planDate] = useState(() => localDate());
+  const [planDate, setPlanDate] = useState(() => localDate());
   const [tasks, setTasks] = useState<CandidateTask[]>([]);
   const [checkin, setCheckin] = useState<Checkin | null>(null);
   const [plan, setPlan] = useState<PlanResponse | null>(null);
@@ -51,12 +51,34 @@ export function Planner() {
     void load();
   }, [load]);
 
+  /*
+   * A tab left open past midnight would otherwise keep editing yesterday's
+   * plan. Re-check the local date on a timer and whenever the tab regains
+   * focus — a laptop that slept through midnight fires no interval, so the
+   * visibility check is the one that actually catches most cases.
+   */
+  useEffect(() => {
+    const check = () => {
+      const today = localDate();
+      setPlanDate((current) => (current === today ? current : today));
+    };
+    const id = setInterval(check, 60_000);
+    document.addEventListener("visibilitychange", check);
+    window.addEventListener("focus", check);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", check);
+      window.removeEventListener("focus", check);
+    };
+  }, []);
+
   async function generate(input: {
     availableMinutes: number;
     focus: Focus;
     answers: CandidateTask[];
     selectedKeys: string[];
     preserve?: boolean;
+    startTime?: string;
   }) {
     setBusy(true);
     setError(null);
@@ -71,6 +93,7 @@ export function Planner() {
           answers: input.answers,
           selectedKeys: input.selectedKeys,
           preserve: input.preserve ?? true,
+          startTime: input.startTime ?? checkin?.startTime ?? localTime(),
         }),
       });
       const data = await res.json();
@@ -79,7 +102,11 @@ export function Planner() {
         return;
       }
       setPlan(data);
-      setCheckin({ availableMinutes: input.availableMinutes, focus: input.focus });
+      setCheckin({
+        availableMinutes: input.availableMinutes,
+        focus: input.focus,
+        startTime: input.startTime ?? checkin?.startTime ?? localTime(),
+      });
     } finally {
       setBusy(false);
     }
@@ -129,6 +156,7 @@ export function Planner() {
       {plan ? (
         <PlanView
           plan={plan}
+          startTime={checkin?.startTime ?? null}
           busy={busy}
           onOutcome={(id, outcome, actualMinutes) =>
             patchBlock(id, { outcome, ...(actualMinutes !== undefined ? { actualMinutes } : {}) })

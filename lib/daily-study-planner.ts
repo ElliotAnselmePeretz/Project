@@ -356,3 +356,39 @@ export function replan(
     breakMinutes: rest.breakMinutes + keep.filter((b) => b.kind === "break").reduce((n, b) => n + b.minutes, 0),
   };
 }
+
+
+/**
+ * How many minutes a recorded block should deduct from its task's remaining
+ * estimate.
+ *
+ * Being stuck deducts nothing: ten minutes of failing to get started has not
+ * reduced the work left, and pretending otherwise would quietly shrink the
+ * estimate every time a student struggles — the opposite of useful.
+ *
+ * `finished` here means the student finished what this block set out to do,
+ * not that the assignment is complete. Nothing in the planner completes a
+ * source assignment.
+ */
+export function minutesToDeduct(
+  outcome: "finished" | "progress" | "stuck" | null,
+  blockMinutes: number,
+  actualMinutes?: number | null,
+): number {
+  if (outcome === null || outcome === "stuck") return 0;
+  const spent = actualMinutes != null && actualMinutes > 0 ? actualMinutes : blockMinutes;
+  return Math.max(0, Math.round(spent));
+}
+
+/** Clock time for each block, given when the session starts. Pure. */
+export function withClockTimes(
+  blocks: { minutes: number }[],
+  startsAt: Date,
+): { startsAt: Date; endsAt: Date }[] {
+  let cursor = startsAt.getTime();
+  return blocks.map((b) => {
+    const from = new Date(cursor);
+    cursor += b.minutes * 60_000;
+    return { startsAt: from, endsAt: new Date(cursor) };
+  });
+}

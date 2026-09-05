@@ -78,8 +78,21 @@ export function ensureSchema() {
         urgency TEXT,
         outcome TEXT,
         actual_minutes INTEGER,
-        edited INTEGER NOT NULL DEFAULT 0
+        edited INTEGER NOT NULL DEFAULT 0,
+        applied_minutes INTEGER NOT NULL DEFAULT 0
       )`);
+    // Older databases predate these columns; SQLite has no IF NOT EXISTS for
+    // ADD COLUMN, so try each and ignore the duplicate-column error.
+    for (const [table, col] of [
+      ["planner_blocks", "applied_minutes INTEGER NOT NULL DEFAULT 0"],
+      ["planner_checkins", "start_time TEXT"],
+    ]) {
+      try {
+        await client.execute(`ALTER TABLE ${table} ADD COLUMN ${col}`);
+      } catch {
+        /* column already present */
+      }
+    }
     await client.execute(
       `CREATE INDEX IF NOT EXISTS planner_blocks_user_date ON planner_blocks (user_id, plan_date, position)`,
     );

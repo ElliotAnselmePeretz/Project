@@ -144,6 +144,8 @@ export const plannerCheckins = sqliteTable(
     planDate: text("plan_date").notNull(),
     availableMinutes: integer("available_minutes").notNull(),
     focus: text("focus", { enum: ["low", "okay", "good"] }).notNull(),
+    /** 'HH:MM' local start of the session, so blocks can show clock times. */
+    startTime: text("start_time"),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
   },
   (t) => [primaryKey({ columns: [t.userId, t.planDate] })],
@@ -197,6 +199,12 @@ export const plannerBlocks = sqliteTable(
     actualMinutes: integer("actual_minutes"),
     /** Set when the student changed this block, so a replan preserves it. */
     edited: integer("edited", { mode: "boolean" }).notNull().default(false),
+    /**
+     * Minutes this block has already deducted from its task's remaining
+     * estimate. Recording an outcome twice must adjust by the difference
+     * rather than subtracting again.
+     */
+    appliedMinutes: integer("applied_minutes").notNull().default(0),
   },
   (t) => [index("planner_blocks_user_date").on(t.userId, t.planDate, t.position)],
 );

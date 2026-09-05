@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { URGENCY_LABELS } from "@/lib/daily-study-planner";
+import { URGENCY_LABELS, withClockTimes } from "@/lib/daily-study-planner";
+import { BlockTimer } from "./BlockTimer";
 import { Badge, Banner, Button, Card, CardBody, CountUp, Input, Progress, SectionTitle } from "@/components/ui";
 import type { Block, PlanResponse } from "./types";
 
@@ -11,12 +12,18 @@ const OUTCOMES = [
   { id: "stuck", label: "Still stuck" },
 ] as const;
 
+function clockLabel(d: Date): string {
+  return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
 function BlockRow({
   block,
+  times,
   onOutcome,
   onMinutes,
 }: {
   block: Block;
+  times?: { startsAt: Date; endsAt: Date };
   onOutcome: (id: string, outcome: Block["outcome"], actualMinutes?: number) => void;
   onMinutes: (id: string, minutes: number) => void;
 }) {
@@ -31,24 +38,41 @@ function BlockRow({
           className="absolute left-[9px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-border-strong"
           aria-hidden="true"
         />
-        <span className="animate-fade-in">{block.minutes}m break</span>
+        <span className="animate-fade-in">
+          {times ? `${clockLabel(times.startsAt)} · ` : ""}
+          {block.minutes}m break
+        </span>
       </li>
     );
   }
 
   return (
     <li className="relative pl-9">
+      {/* The marker reflects what actually happened. A green tick on a block
+          recorded as "still stuck" would read as success, which it is not. */}
       <span
         className={`absolute left-[4px] top-5 z-[1] grid h-4 w-4 place-items-center rounded-full border-2 transition-all duration-500 ${
-          block.outcome
+          block.outcome === "finished"
             ? "border-success bg-success"
-            : block.kind === "unblock"
-              ? "border-warning bg-bg"
-              : "border-accent bg-bg"
+            : block.outcome === "progress"
+              ? "border-accent bg-accent"
+              : block.outcome === "stuck"
+                ? "border-warning bg-warning"
+                : block.kind === "unblock"
+                  ? "border-warning bg-bg"
+                  : "border-accent bg-bg"
         }`}
         aria-hidden="true"
       >
-        {block.outcome && <span className="animate-check text-[9px] leading-none text-bg">✓</span>}
+        {block.outcome === "finished" && (
+          <span className="animate-check text-[9px] leading-none text-bg">✓</span>
+        )}
+        {block.outcome === "progress" && (
+          <span className="animate-check h-1.5 w-1.5 rounded-full bg-bg" />
+        )}
+        {block.outcome === "stuck" && (
+          <span className="animate-check text-[9px] font-bold leading-none text-bg">?</span>
+        )}
       </span>
 
       <Card className={`transition-all duration-500 ${block.outcome ? "opacity-70" : ""}`}>
@@ -62,6 +86,11 @@ function BlockRow({
                 {block.edited && <span className="text-[10px] text-faint">edited</span>}
               </div>
               <p className="mt-1.5 font-medium text-fg">{block.title}</p>
+              {times && (
+                <p className="mt-0.5 text-xs tabular-nums text-muted">
+                  {clockLabel(times.startsAt)} – {clockLabel(times.endsAt)}
+                </p>
+              )}
             </div>
 
             <div className="shrink-0 text-right">
@@ -130,6 +159,11 @@ function BlockRow({
               aria-label={`Actual minutes spent on ${block.title}`}
               className="w-28"
             />
+            <BlockTimer
+              blockId={block.id}
+              plannedMinutes={block.minutes}
+              onStop={(elapsed) => setActual(String(elapsed))}
+            />
             {block.outcome && (
               <button
                 onClick={() => onOutcome(block.id, null)}
@@ -155,6 +189,7 @@ function BlockRow({
 
 export function PlanView({
   plan,
+  startTime,
   busy,
   onOutcome,
   onMinutes,
@@ -162,6 +197,8 @@ export function PlanView({
   onStartOver,
 }: {
   plan: PlanResponse;
+  /** 'HH:MM' the session starts; absent means clock times are not shown. */
+  startTime?: string | null;
   busy: boolean;
   onOutcome: (id: string, outcome: Block["outcome"], actualMinutes?: number) => void;
   onMinutes: (id: string, minutes: number) => void;
@@ -170,6 +207,16 @@ export function PlanView({
 }) {
   const done = plan.blocks.filter((b) => b.kind !== "break" && b.outcome).length;
   const total = plan.blocks.filter((b) => b.kind !== "break").length;
+
+  // Clock times are derived, never stored per block: editing one block's length
+  // must shift everything after it without a migration.
+  const times = (() => {
+    if (!startTime) return null;
+    const [h, m] = startTime.split(":").map(Number);
+    const start = new Date();
+    start.setHours(h, m, 0, 0);
+    return withClockTimes(plan.blocks, start);
+  })();
 
   return (
     <div className="space-y-5">
@@ -189,6 +236,9 @@ export function PlanView({
               </p>
               <p className="mt-0.5 text-xs text-muted">
                 <CountUp value={done} /> of {total} blocks recorded
+                {times && times.length > 0
+                  ? ` · finishes ${clockLabel(times[times.length - 1].endsAt)}`
+                  : ""}
               </p>
             </div>
             <div className="flex gap-2">
@@ -227,8 +277,14 @@ export function PlanView({
             aria-hidden="true"
           />
           <ul className="cascade relative space-y-1">
-            {plan.blocks.map((b) => (
-              <BlockRow key={b.id} block={b} onOutcome={onOutcome} onMinutes={onMinutes} />
+            {plan.blocks.map((b, i) => (
+              <BlockRow
+                key={b.id}
+                block={b}
+                times={times ? times[i] : undefined}
+                onOutcome={onOutcome}
+                onMinutes={onMinutes}
+              />
             ))}
           </ul>
         </div>

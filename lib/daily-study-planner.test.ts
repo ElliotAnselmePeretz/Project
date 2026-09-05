@@ -12,6 +12,8 @@ import {
   UNBLOCK_MINUTES,
   type PlannerTask,
   type PlannerSettings,
+  minutesToDeduct,
+  withClockTimes,
   type Difficulty,
   type Purpose,
 } from "./daily-study-planner.ts";
@@ -308,4 +310,34 @@ test("replanning carries a kept block's badges across, not just its text", () =>
   assert.equal(plan.blocks[0].urgency, "overdue", "urgency must survive a replan");
   assert.equal(plan.blocks[0].purpose, "write");
   assert.equal(plan.blocks[0].subject, "Physics");
+});
+
+// --- progress carry-forward ---------------------------------------------------
+
+test("a recorded block deducts the time actually spent", () => {
+  assert.equal(minutesToDeduct("progress", 40, 38), 38);
+  assert.equal(minutesToDeduct("finished", 40, null), 40, "falls back to the planned length");
+});
+
+test("being stuck deducts nothing from the work left", () => {
+  assert.equal(minutesToDeduct("stuck", 10, 10), 0, "struggling is not progress");
+});
+
+test("clearing an outcome deducts nothing", () => {
+  assert.equal(minutesToDeduct(null, 40, 40), 0);
+});
+
+test("clock times run consecutively from the session start", () => {
+  const times = withClockTimes([{ minutes: 40 }, { minutes: 5 }, { minutes: 25 }], new Date(2026, 8, 4, 16, 0));
+  assert.equal(times[0].startsAt.getHours(), 16);
+  assert.equal(times[0].endsAt.getMinutes(), 40);
+  assert.equal(times[1].startsAt.getMinutes(), 40, "the next block starts when the last ended");
+  assert.equal(times[2].endsAt.getHours(), 17);
+  assert.equal(times[2].endsAt.getMinutes(), 10);
+});
+
+test("clock times cross midnight without going backwards", () => {
+  const times = withClockTimes([{ minutes: 40 }, { minutes: 40 }], new Date(2026, 8, 4, 23, 30));
+  assert.ok(times[1].startsAt.getTime() > times[0].startsAt.getTime());
+  assert.equal(times[1].endsAt.getDate(), 5, "a late session rolls into the next day");
 });

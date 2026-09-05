@@ -7,6 +7,7 @@ import {
   DIFFICULTY_LABELS,
   FOCUS_LABELS,
   PURPOSE_LABELS,
+  localTime,
   type CandidateTask,
   type Checkin,
 } from "./types";
@@ -66,10 +67,12 @@ export function CheckIn({
     focus: Focus;
     answers: CandidateTask[];
     selectedKeys: string[];
+    startTime: string;
   }) => void;
 }) {
   const [minutes, setMinutes] = useState(initial?.availableMinutes ?? 60);
   const [focus, setFocus] = useState<Focus>(initial?.focus ?? "okay");
+  const [startTime, setStartTime] = useState(initial?.startTime ?? localTime());
   const [answers, setAnswers] = useState<CandidateTask[]>(tasks);
   const [selected, setSelected] = useState<Set<string>>(new Set(tasks.map((t) => t.key)));
 
@@ -120,6 +123,16 @@ export function CheckIn({
                 className="w-24"
               />
             </div>
+          </Field>
+
+          <Field label="Starting when?" hint="Used to put clock times on each block.">
+            <Input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              aria-label="Session start time"
+              className="w-32"
+            />
           </Field>
 
           <Field label="How's your focus?">
@@ -255,6 +268,7 @@ export function CheckIn({
               focus,
               answers,
               selectedKeys: [...selected],
+              startTime,
             })
           }
         >

@@ -30,6 +30,7 @@ export interface Block {
   outcome: "finished" | "progress" | "stuck" | null;
   actualMinutes: number | null;
   edited: boolean;
+  appliedMinutes: number;
 }
 
 export interface UnscheduledItem {
@@ -55,6 +56,13 @@ export interface PlanResponse {
 export interface Checkin {
   availableMinutes: number;
   focus: Focus;
+  /** 'HH:MM' local time the session starts, for clock times on blocks. */
+  startTime?: string | null;
+}
+
+/** 'HH:MM' for right now, in the student's local time. */
+export function localTime(d: Date = new Date()): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 /** The student's local calendar day — the server cannot infer their timezone. */

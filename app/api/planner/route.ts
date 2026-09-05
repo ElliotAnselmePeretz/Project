@@ -3,7 +3,14 @@ import { and, asc, eq, gte, inArray } from "drizzle-orm";
 import { db, ensureSchema, schema } from "@/lib/db";
 import { getGraphToken } from "@/lib/graph-token";
 import { SUBJECT_GROUPS } from "@/lib/ib-subjects";
-import { buildPlan, replan, type Focus, type PlanBlock, type PlannerTask } from "@/lib/daily-study-planner";
+import {
+  buildPlan,
+  minutesToDeduct,
+  replan,
+  type Focus,
+  type PlanBlock,
+  type PlannerTask,
+} from "@/lib/daily-study-planner";
 import { guessPurpose, defaultEstimate } from "@/lib/planner-sources";
 
 /** 'YYYY-MM-DD' in the student's local timezone; the client supplies it. */
@@ -180,12 +187,14 @@ export async function POST(req: NextRequest) {
       });
   }
 
+  const startTime = /^\d{2}:\d{2}$/.test(body.startTime) ? body.startTime : null;
+
   await db
     .insert(schema.plannerCheckins)
-    .values({ userId, planDate, availableMinutes, focus, updatedAt: new Date() })
+    .values({ userId, planDate, availableMinutes, focus, startTime, updatedAt: new Date() })
     .onConflictDoUpdate({
       target: [schema.plannerCheckins.userId, schema.plannerCheckins.planDate],
-      set: { availableMinutes, focus, updatedAt: new Date() },
+      set: { availableMinutes, focus, startTime, updatedAt: new Date() },
     });
 
   const tasks = await loadCandidates(userId);
@@ -304,6 +313,51 @@ export async function PATCH(req: NextRequest) {
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to change" }, { status: 400 });
+  }
+
+  /*
+   * Carry the time spent back to the task's remaining estimate, so tomorrow's
+   * check-in reflects work already done instead of asking again.
+   *
+   * We deduct the *difference* against what this block previously applied.
+   * Re-recording an outcome, correcting the minutes, or clearing it entirely
+   * must all end up at the right total rather than subtracting twice.
+   */
+  const nextOutcome = (outcome !== undefined ? outcome : existing.outcome) as
+    | "finished"
+    | "progress"
+    | "stuck"
+    | null;
+  const nextActual = (patch.actualMinutes !== undefined ? patch.actualMinutes : existing.actualMinutes) as
+    | number
+    | null;
+  const nextMinutes = (patch.minutes as number | undefined) ?? existing.minutes;
+
+  const shouldApply = minutesToDeduct(nextOutcome, nextMinutes, nextActual);
+  const delta = shouldApply - existing.appliedMinutes;
+
+  if (delta !== 0 && existing.taskKey) {
+    const [sourceType, ...rest] = existing.taskKey.split(":");
+    const sourceId = rest.join(":");
+    if ((sourceType === "deadline" || sourceType === "goal") && sourceId) {
+      const taskScope = and(
+        eq(schema.plannerTaskState.userId, userId),
+        eq(schema.plannerTaskState.sourceType, sourceType),
+        eq(schema.plannerTaskState.sourceId, sourceId),
+      );
+      const [state] = await db.select().from(schema.plannerTaskState).where(taskScope);
+      if (state) {
+        await db
+          .update(schema.plannerTaskState)
+          .set({
+            // Never below zero, and never above the original estimate when undoing.
+            remainingMinutes: Math.max(0, state.remainingMinutes - delta),
+            updatedAt: new Date(),
+          })
+          .where(taskScope);
+      }
+    }
+    patch.appliedMinutes = shouldApply;
   }
 
   const [row] = await db.update(schema.plannerBlocks).set(patch).where(scope).returning();
