@@ -60,7 +60,8 @@ Use `text-accent` / `bg-accent` and it is correct in both.
 
 | Component | Use it for |
 | --- | --- |
-| `Button` | Any action. `variant`: `primary` \| `secondary` \| `ghost` \| `danger`. `size`: `sm` \| `md` |
+| `Button` | Any action. `variant`: `primary` \| `secondary` \| `ghost` \| `danger`. `size`: `sm` \| `md` \| `lg` |
+| `LinkButton` | A link styled as a button. Use this rather than nesting a `Button` in a `Link` |
 | `Card` / `CardBody` / `CardHeader` | Grouping related content in a bordered panel |
 | `Badge` | Short status labels. `tone`: neutral \| accent \| success \| warning \| danger \| info |
 | `Banner` | A full-width message: errors, warnings, notices |

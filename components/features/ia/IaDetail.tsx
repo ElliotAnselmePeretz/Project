@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { Badge, Banner } from "@/components/ui";
+import { Badge, Banner, LinkButton } from "@/components/ui";
 import { isOralGroup } from "@/lib/ia";
 import { IaStages } from "./IaStages";
 import { IaDetails } from "./IaDetails";
@@ -63,12 +62,15 @@ export function IaDetail({ group }: { group: number }) {
         <h2 className="text-lg font-semibold tracking-tight text-fg">{data.subject.name}</h2>
         <Badge tone={data.subject.level === "HL" ? "accent" : "neutral"}>{data.subject.level}</Badge>
         <Badge tone="info">{data.label}</Badge>
-        <Link
-          href={`/subjects/${group}`}
-          className="ml-auto text-sm font-medium text-accent hover:underline"
-        >
-          Grades, goals &amp; notes →
-        </Link>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <LinkButton href={`/subjects/${group}/ia/about`} size="lg">
+          About this {data.label}
+        </LinkButton>
+        <LinkButton href={`/subjects/${group}`} size="lg">
+          Grades, goals &amp; notes
+        </LinkButton>
       </div>
 
       {error && <Banner tone="danger">{error}</Banner>}
