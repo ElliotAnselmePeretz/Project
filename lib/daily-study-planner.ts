@@ -72,6 +72,17 @@ export interface PlannerTask {
 export interface PlannerSettings {
   availableMinutes: number;
   focus: Focus;
+  /**
+   * Minutes the student expects to have on a typical future day, if they have
+   * told us. Used only to escalate a large project whose remaining work will
+   * not fit before its deadline.
+   *
+   * Undefined means unknown, and unknown means no escalation. The planner must
+   * not invent future availability — inventing it would either raise false
+   * alarms or, worse, quietly reassure a student that a project fits when
+   * nobody ever said how much time they had.
+   */
+  dailyMinutes?: number;
 }
 
 export type BlockKind = "study" | "unblock" | "break";
@@ -144,6 +155,26 @@ export function urgencyOf(task: PlannerTask, now: Date): Urgency {
   return "later";
 }
 
+/**
+ * Whether a not-yet-urgent project should be pulled forward because the work
+ * left will not fit in the time available before it is due.
+ *
+ * Returns false whenever future availability is unknown: see `dailyMinutes`.
+ */
+export function shouldEscalate(task: PlannerTask, settings: PlannerSettings, now: Date): boolean {
+  if (settings.dailyMinutes === undefined || settings.dailyMinutes <= 0) return false;
+  if (!task.dueAt) return false;
+
+  const urgency = urgencyOf(task, now);
+  if (urgency !== "soon" && urgency !== "later") return false;
+
+  // Today is already accounted for by this session; count the days after it.
+  const daysLeft = Math.max(0, dayDiff(now, task.dueAt));
+  const futureMinutes = daysLeft * settings.dailyMinutes;
+
+  return task.remainingMinutes > futureMinutes;
+}
+
 // --- Ranking -----------------------------------------------------------------
 
 /**
@@ -162,9 +193,22 @@ function difficultyBoost(difficulty: Difficulty, focus: Focus): number {
  * impossible to trust or to test.
  */
 export function rankTasks(tasks: PlannerTask[], settings: PlannerSettings, now: Date): PlannerTask[] {
+  /**
+   * Effective band. A project that will not fit before its deadline moves up
+   * one place, never straight to the front: it is at risk, not overdue, and
+   * displacing genuinely due work would be worse than the problem it solves.
+   */
+  const band = (t: PlannerTask): number => {
+    const index = URGENCY_ORDER.indexOf(urgencyOf(t, now));
+    return shouldEscalate(t, settings, now) ? Math.max(0, index - 1) : index;
+  };
+
   return [...tasks].sort((a, b) => {
     const ua = urgencyOf(a, now);
     const ub = urgencyOf(b, now);
+    const ba = band(a);
+    const bb = band(b);
+    if (ba !== bb) return ba - bb;
     if (ua !== ub) return URGENCY_ORDER.indexOf(ua) - URGENCY_ORDER.indexOf(ub);
 
     // Within today, the earlier hard cutoff wins outright — a 09:00 submission
@@ -205,7 +249,13 @@ export function methodFor(task: PlannerTask): string {
   }
 }
 
-function reasonFor(urgency: Urgency, task: PlannerTask, settings: PlannerSettings): string {
+function reasonFor(urgency: Urgency, task: PlannerTask, settings: PlannerSettings, now?: Date): string {
+  if (now && shouldEscalate(task, settings, now) && task.dueAt) {
+    const daysLeft = Math.max(0, dayDiff(now, task.dueAt));
+    const future = daysLeft * (settings.dailyMinutes ?? 0);
+    return `Moved earlier: about ${task.remainingMinutes} minutes of work left, but only about ${future} minutes expected before it is due.`;
+  }
+
   switch (urgency) {
     case "needs-date-check":
       return "The imported date is a guess — confirm it before this is treated as a deadline.";
@@ -274,7 +324,7 @@ export function buildPlan(
           subject: task.subject,
           purpose: task.purpose,
           method: methodFor(task),
-          reason: `${reasonFor(urgency, task, settings)} Shortened to fit the time you have.`,
+          reason: `${reasonFor(urgency, task, settings, now)} Shortened to fit the time you have.`,
           urgency,
         });
         used += shortened;
@@ -306,8 +356,8 @@ export function buildPlan(
       purpose: task.purpose,
       method: methodFor(task),
       reason: isStuck
-        ? `${reasonFor(urgency, task, settings)} Short unblocking step — this does not finish the task.`
-        : reasonFor(urgency, task, settings),
+        ? `${reasonFor(urgency, task, settings, now)} Short unblocking step — this does not finish the task.`
+        : reasonFor(urgency, task, settings, now),
       urgency,
     });
     used += wanted;

@@ -68,11 +68,15 @@ export function CheckIn({
     answers: CandidateTask[];
     selectedKeys: string[];
     startTime: string;
+    dailyMinutes?: number;
   }) => void;
 }) {
   const [minutes, setMinutes] = useState(initial?.availableMinutes ?? 60);
   const [focus, setFocus] = useState<Focus>(initial?.focus ?? "okay");
   const [startTime, setStartTime] = useState(initial?.startTime ?? localTime());
+  const [dailyMinutes, setDailyMinutes] = useState<string>(
+    initial?.dailyMinutes != null ? String(initial.dailyMinutes) : "",
+  );
   const [answers, setAnswers] = useState<CandidateTask[]>(tasks);
   const [selected, setSelected] = useState<Set<string>>(new Set(tasks.map((t) => t.key)));
 
@@ -131,6 +135,23 @@ export function CheckIn({
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               aria-label="Session start time"
+              className="w-32"
+            />
+          </Field>
+
+          <Field
+            label="Roughly how long can you study on a normal day?"
+            hint="Optional. Only used to flag a big project that will not fit before its deadline — left blank, nothing is assumed."
+          >
+            <Input
+              type="number"
+              min={0}
+              max={960}
+              step={15}
+              placeholder="e.g. 90"
+              value={dailyMinutes}
+              onChange={(e) => setDailyMinutes(e.target.value)}
+              aria-label="Typical minutes available per day"
               className="w-32"
             />
           </Field>
@@ -269,6 +290,7 @@ export function CheckIn({
               answers,
               selectedKeys: [...selected],
               startTime,
+              dailyMinutes: dailyMinutes ? Number(dailyMinutes) : undefined,
             })
           }
         >

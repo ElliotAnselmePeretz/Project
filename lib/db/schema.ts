@@ -146,6 +146,8 @@ export const plannerCheckins = sqliteTable(
     focus: text("focus", { enum: ["low", "okay", "good"] }).notNull(),
     /** 'HH:MM' local start of the session, so blocks can show clock times. */
     startTime: text("start_time"),
+    /** Minutes the student expects on a typical future day. Null = unknown. */
+    dailyMinutes: integer("daily_minutes"),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
   },
   (t) => [primaryKey({ columns: [t.userId, t.planDate] })],
@@ -205,6 +207,12 @@ export const plannerBlocks = sqliteTable(
      * rather than subtracting again.
      */
     appliedMinutes: integer("applied_minutes").notNull().default(0),
+    /**
+     * A quick check after a learning block: could the student do it unaided?
+     * The doc is explicit that confidence alone is not proof of mastery, so
+     * this records what happened on an attempt, not how the student felt.
+     */
+    performance: text("performance", { enum: ["independent", "with-help", "not-yet"] }),
   },
   (t) => [index("planner_blocks_user_date").on(t.userId, t.planDate, t.position)],
 );

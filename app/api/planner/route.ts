@@ -189,12 +189,17 @@ export async function POST(req: NextRequest) {
 
   const startTime = /^\d{2}:\d{2}$/.test(body.startTime) ? body.startTime : null;
 
+  // Unknown stays null: the planner must never invent future availability.
+  const rawDaily = Number(body.dailyMinutes);
+  const dailyMinutes =
+    Number.isFinite(rawDaily) && rawDaily > 0 ? Math.min(Math.round(rawDaily), 16 * 60) : null;
+
   await db
     .insert(schema.plannerCheckins)
-    .values({ userId, planDate, availableMinutes, focus, startTime, updatedAt: new Date() })
+    .values({ userId, planDate, availableMinutes, focus, startTime, dailyMinutes, updatedAt: new Date() })
     .onConflictDoUpdate({
       target: [schema.plannerCheckins.userId, schema.plannerCheckins.planDate],
-      set: { availableMinutes, focus, startTime, updatedAt: new Date() },
+      set: { availableMinutes, focus, startTime, dailyMinutes, updatedAt: new Date() },
     });
 
   const tasks = await loadCandidates(userId);
@@ -221,9 +226,9 @@ export async function POST(req: NextRequest) {
           urgency: (b.urgency as PlanBlock["urgency"]) ?? undefined,
         })),
         chosen,
-        { availableMinutes, focus },
+        { availableMinutes, focus, dailyMinutes: dailyMinutes ?? undefined },
       )
-    : buildPlan(chosen, { availableMinutes, focus });
+    : buildPlan(chosen, { availableMinutes, focus, dailyMinutes: dailyMinutes ?? undefined });
 
   // Replace the day's blocks, carrying kept rows' outcomes back onto them.
   const keptById = new Map(keep.map((b, i) => [i, b]));
@@ -249,6 +254,8 @@ export async function POST(req: NextRequest) {
       urgency: b.urgency ?? null,
       outcome: kept?.outcome ?? null,
       actualMinutes: kept?.actualMinutes ?? null,
+      performance: kept?.performance ?? null,
+      appliedMinutes: kept?.appliedMinutes ?? 0,
       edited: kept?.edited ?? false,
     };
   });
@@ -283,14 +290,58 @@ export async function PATCH(req: NextRequest) {
   const userId = await requireUser(req);
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
-  const { id, outcome, actualMinutes, minutes } = await req.json();
+  const { id, outcome, actualMinutes, minutes, method, performance, move } = await req.json();
   if (typeof id !== "string") return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const scope = and(eq(schema.plannerBlocks.id, id), eq(schema.plannerBlocks.userId, userId));
   const [existing] = await db.select().from(schema.plannerBlocks).where(scope);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  /*
+   * Move a block up or down.
+   *
+   * Only the two blocks' `position` values are swapped — their contents,
+   * outcomes and applied minutes stay put. Break rows keep their own positions
+   * and so remain interleaved as separators, which they would not if we
+   * shuffled content between rows instead.
+   */
+  if (move === "up" || move === "down") {
+    const siblings = await loadBlocks(userId, existing.planDate);
+    const studyRows = siblings.filter((b) => b.kind !== "break");
+    const index = studyRows.findIndex((b) => b.id === id);
+    const target = studyRows[move === "up" ? index - 1 : index + 1];
+
+    if (!target) {
+      return NextResponse.json({ error: "Already at the end" }, { status: 400 });
+    }
+
+    await db
+      .update(schema.plannerBlocks)
+      .set({ position: target.position, edited: true })
+      .where(scope);
+    await db
+      .update(schema.plannerBlocks)
+      .set({ position: existing.position, edited: true })
+      .where(and(eq(schema.plannerBlocks.id, target.id), eq(schema.plannerBlocks.userId, userId)));
+
+    return NextResponse.json({ blocks: await loadBlocks(userId, existing.planDate) });
+  }
+
   const patch: Record<string, unknown> = {};
+
+  if (method !== undefined) {
+    const cleaned = typeof method === "string" ? method.trim().slice(0, 400) : "";
+    if (!cleaned) return NextResponse.json({ error: "A method cannot be empty" }, { status: 400 });
+    patch.method = cleaned;
+    patch.edited = true;
+  }
+
+  if (performance !== undefined) {
+    if (performance !== null && !["independent", "with-help", "not-yet"].includes(performance)) {
+      return NextResponse.json({ error: "Unknown performance" }, { status: 400 });
+    }
+    patch.performance = performance;
+  }
 
   if (outcome !== undefined) {
     if (outcome !== null && !["finished", "progress", "stuck"].includes(outcome)) {
@@ -358,6 +409,31 @@ export async function PATCH(req: NextRequest) {
       }
     }
     patch.appliedMinutes = shouldApply;
+  }
+
+  /*
+   * Let an attempt inform the next check-in's suggested difficulty. This is a
+   * suggestion the student can override, not a verdict: the doc is explicit
+   * that a successful independent attempt is evidence, while confidence alone
+   * is not proof of mastery — so only an actual attempt moves this.
+   */
+  if (performance !== undefined && performance !== null && existing.taskKey) {
+    const [sourceType, ...rest] = existing.taskKey.split(":");
+    const sourceId = rest.join(":");
+    if ((sourceType === "deadline" || sourceType === "goal") && sourceId) {
+      const suggested =
+        performance === "independent" ? "comfortable" : performance === "with-help" ? "challenging" : "stuck";
+      await db
+        .update(schema.plannerTaskState)
+        .set({ difficulty: suggested, updatedAt: new Date() })
+        .where(
+          and(
+            eq(schema.plannerTaskState.userId, userId),
+            eq(schema.plannerTaskState.sourceType, sourceType),
+            eq(schema.plannerTaskState.sourceId, sourceId),
+          ),
+        );
+    }
   }
 
   const [row] = await db.update(schema.plannerBlocks).set(patch).where(scope).returning();

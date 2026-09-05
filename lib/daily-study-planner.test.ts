@@ -13,6 +13,7 @@ import {
   type PlannerTask,
   type PlannerSettings,
   minutesToDeduct,
+  shouldEscalate,
   withClockTimes,
   type Difficulty,
   type Purpose,
@@ -340,4 +341,64 @@ test("clock times cross midnight without going backwards", () => {
   const times = withClockTimes([{ minutes: 40 }, { minutes: 40 }], new Date(2026, 8, 4, 23, 30));
   assert.ok(times[1].startsAt.getTime() > times[0].startsAt.getTime());
   assert.equal(times[1].endsAt.getDate(), 5, "a late session rolls into the next day");
+});
+
+// --- escalation when work will not fit before the deadline --------------------
+
+test("no escalation when future availability is unknown", () => {
+  // A huge project due in three days, but the student never said how much time
+  // they will have. Inventing that number is exactly what the doc forbids.
+  const big = task({ key: "ee", dueAt: at(7), remainingMinutes: 600 });
+  assert.equal(shouldEscalate(big, settings(), NOW), false);
+  assert.equal(shouldEscalate(big, settings({ dailyMinutes: 0 }), NOW), false);
+});
+
+test("a project escalates when the work left exceeds the time left", () => {
+  // Due in 3 days, 600 minutes left, 60 minutes a day expected = 180 available.
+  const big = task({ key: "ee", dueAt: at(7), remainingMinutes: 600 });
+  assert.equal(shouldEscalate(big, settings({ dailyMinutes: 60 }), NOW), true);
+  // With plenty of time expected, it does not.
+  assert.equal(shouldEscalate(big, settings({ dailyMinutes: 300 }), NOW), false);
+});
+
+test("escalation moves a project up one band, never to the front", () => {
+  const ranked = rankTasks(
+    [
+      task({ key: "later-big", dueAt: at(20), remainingMinutes: 900 }),
+      task({ key: "due-today", dueAt: at(4, 17), remainingMinutes: 30 }),
+      task({ key: "soon-small", dueAt: at(6), remainingMinutes: 20 }),
+    ],
+    settings({ dailyMinutes: 30 }),
+    NOW,
+  );
+  assert.equal(ranked[0].key, "due-today", "at-risk work must not displace work due today");
+});
+
+test("overdue and due-today work never escalates — it is already first", () => {
+  assert.equal(
+    shouldEscalate(task({ key: "t", dueAt: at(4, 17), remainingMinutes: 999 }), settings({ dailyMinutes: 10 }), NOW),
+    false,
+  );
+  assert.equal(
+    shouldEscalate(task({ key: "o", dueAt: at(1), remainingMinutes: 999 }), settings({ dailyMinutes: 10 }), NOW),
+    false,
+  );
+});
+
+test("an escalated block explains the arithmetic to the student", () => {
+  const plan = buildPlan(
+    [task({ key: "ee", dueAt: at(7), remainingMinutes: 600 })],
+    settings({ dailyMinutes: 60, availableMinutes: 120 }),
+    NOW,
+  );
+  const reason = plan.blocks.find((b) => b.kind !== "break")?.reason ?? "";
+  assert.match(reason, /600 minutes of work left/);
+  assert.match(reason, /180 minutes expected/);
+});
+
+test("an undated goal never escalates", () => {
+  assert.equal(
+    shouldEscalate(task({ key: "g", dueAt: null, remainingMinutes: 999 }), settings({ dailyMinutes: 10 }), NOW),
+    false,
+  );
 });

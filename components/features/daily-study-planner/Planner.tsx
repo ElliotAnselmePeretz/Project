@@ -79,6 +79,7 @@ export function Planner() {
     selectedKeys: string[];
     preserve?: boolean;
     startTime?: string;
+    dailyMinutes?: number;
   }) {
     setBusy(true);
     setError(null);
@@ -94,6 +95,7 @@ export function Planner() {
           selectedKeys: input.selectedKeys,
           preserve: input.preserve ?? true,
           startTime: input.startTime ?? checkin?.startTime ?? localTime(),
+          dailyMinutes: input.dailyMinutes ?? checkin?.dailyMinutes ?? undefined,
         }),
       });
       const data = await res.json();
@@ -106,10 +108,25 @@ export function Planner() {
         availableMinutes: input.availableMinutes,
         focus: input.focus,
         startTime: input.startTime ?? checkin?.startTime ?? localTime(),
+        dailyMinutes: input.dailyMinutes ?? checkin?.dailyMinutes ?? null,
       });
     } finally {
       setBusy(false);
     }
+  }
+
+  async function moveBlock(id: string, direction: "up" | "down") {
+    const res = await fetch("/api/planner", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, move: direction }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Could not move that block.");
+      return;
+    }
+    setPlan((cur) => (cur ? { ...cur, blocks: data.blocks } : cur));
   }
 
   async function patchBlock(id: string, body: Record<string, unknown>) {
@@ -162,12 +179,16 @@ export function Planner() {
             patchBlock(id, { outcome, ...(actualMinutes !== undefined ? { actualMinutes } : {}) })
           }
           onMinutes={(id, minutes) => patchBlock(id, { minutes })}
+          onMethod={(id, method) => patchBlock(id, { method })}
+          onPerformance={(id, performance) => patchBlock(id, { performance })}
+          onMove={moveBlock}
           onReplan={() =>
             generate({
               availableMinutes: checkin?.availableMinutes ?? 60,
               focus: checkin?.focus ?? "okay",
               answers: tasks,
               selectedKeys: tasks.map((t) => t.key),
+              dailyMinutes: checkin?.dailyMinutes ?? undefined,
             })
           }
           onStartOver={startOver}

@@ -16,20 +16,38 @@ function clockLabel(d: Date): string {
   return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
+const PERFORMANCE = [
+  { id: "independent", label: "On my own" },
+  { id: "with-help", label: "With help" },
+  { id: "not-yet", label: "Not yet" },
+] as const;
+
 function BlockRow({
   block,
   times,
+  first,
+  last,
   onOutcome,
   onMinutes,
+  onMethod,
+  onPerformance,
+  onMove,
 }: {
   block: Block;
   times?: { startsAt: Date; endsAt: Date };
+  first: boolean;
+  last: boolean;
   onOutcome: (id: string, outcome: Block["outcome"], actualMinutes?: number) => void;
   onMinutes: (id: string, minutes: number) => void;
+  onMethod: (id: string, method: string) => void;
+  onPerformance: (id: string, performance: Block["performance"]) => void;
+  onMove: (id: string, direction: "up" | "down") => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [minutes, setMinutes] = useState(block.minutes);
   const [actual, setActual] = useState<string>("");
+  const [editingMethod, setEditingMethod] = useState(false);
+  const [methodDraft, setMethodDraft] = useState(block.method ?? "");
 
   if (block.kind === "break") {
     return (
@@ -118,19 +136,77 @@ function BlockRow({
                   </Button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="rounded-sm px-1.5 py-0.5 text-sm font-semibold text-fg transition-colors hover:text-accent"
-                  title="Change the length of this block"
-                >
-                  {block.minutes}m
-                </button>
+                <div className="flex items-center gap-1">
+                  <div className="flex flex-col">
+                    <button
+                      onClick={() => onMove(block.id, "up")}
+                      disabled={first}
+                      aria-label={`Move ${block.title} earlier`}
+                      className="rounded-sm px-1 text-[10px] leading-none text-faint transition-colors hover:text-accent disabled:opacity-30"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => onMove(block.id, "down")}
+                      disabled={last}
+                      aria-label={`Move ${block.title} later`}
+                      className="rounded-sm px-1 text-[10px] leading-none text-faint transition-colors hover:text-accent disabled:opacity-30"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="rounded-sm px-1.5 py-0.5 text-sm font-semibold text-fg transition-colors hover:text-accent"
+                    title="Change the length of this block"
+                  >
+                    {block.minutes}m
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
-          {block.method && (
-            <p className="rounded-md bg-surface-alt px-3 py-2 text-sm text-muted">{block.method}</p>
+          {editingMethod ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                value={methodDraft}
+                onChange={(e) => setMethodDraft(e.target.value)}
+                rows={3}
+                maxLength={400}
+                aria-label={`Method for ${block.title}`}
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-fg"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    onMethod(block.id, methodDraft);
+                    setEditingMethod(false);
+                  }}
+                >
+                  Save method
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingMethod(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            block.method && (
+              <button
+                onClick={() => {
+                  setMethodDraft(block.method ?? "");
+                  setEditingMethod(true);
+                }}
+                title="Edit this method"
+                className="w-full rounded-md bg-surface-alt px-3 py-2 text-left text-sm text-muted transition-colors hover:bg-surface-alt/70 hover:text-fg"
+              >
+                {block.method}
+              </button>
+            )
           )}
           {block.reason && <p className="text-xs text-faint">{block.reason}</p>}
 
@@ -174,6 +250,34 @@ function BlockRow({
             )}
           </div>
 
+          {block.outcome && (block.purpose === "learn" || block.purpose === "practise") && (
+            <div className="animate-fade-up space-y-1.5 border-t border-border pt-3">
+              <p className="text-xs font-medium text-fg">Could you do it without help?</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PERFORMANCE.map((o) => (
+                  <button
+                    key={o.id}
+                    onClick={() =>
+                      onPerformance(block.id, block.performance === o.id ? null : o.id)
+                    }
+                    aria-pressed={block.performance === o.id}
+                    className={`rounded-md border px-3 py-1.5 text-xs transition-all duration-200 active:scale-[0.97] ${
+                      block.performance === o.id
+                        ? "animate-pop border-accent bg-accent-soft font-medium text-accent"
+                        : "border-border text-muted hover:-translate-y-px hover:border-border-strong hover:text-fg"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-faint">
+                Based on an actual attempt, not how confident it felt. This adjusts the difficulty
+                suggested next time.
+              </p>
+            </div>
+          )}
+
           {block.outcome && (
             <p className="animate-fade-up text-xs text-muted">
               Recorded as <strong>{OUTCOMES.find((o) => o.id === block.outcome)?.label}</strong>
@@ -193,6 +297,9 @@ export function PlanView({
   busy,
   onOutcome,
   onMinutes,
+  onMethod,
+  onPerformance,
+  onMove,
   onReplan,
   onStartOver,
 }: {
@@ -202,6 +309,9 @@ export function PlanView({
   busy: boolean;
   onOutcome: (id: string, outcome: Block["outcome"], actualMinutes?: number) => void;
   onMinutes: (id: string, minutes: number) => void;
+  onMethod: (id: string, method: string) => void;
+  onPerformance: (id: string, performance: Block["performance"]) => void;
+  onMove: (id: string, direction: "up" | "down") => void;
   onReplan: () => void;
   onStartOver: () => void;
 }) {
@@ -277,15 +387,24 @@ export function PlanView({
             aria-hidden="true"
           />
           <ul className="cascade relative space-y-1">
-            {plan.blocks.map((b, i) => (
-              <BlockRow
-                key={b.id}
-                block={b}
-                times={times ? times[i] : undefined}
-                onOutcome={onOutcome}
-                onMinutes={onMinutes}
-              />
-            ))}
+            {plan.blocks.map((b, i) => {
+              const studyOnly = plan.blocks.filter((x) => x.kind !== "break");
+              const studyIndex = studyOnly.findIndex((x) => x.id === b.id);
+              return (
+                <BlockRow
+                  key={b.id}
+                  block={b}
+                  times={times ? times[i] : undefined}
+                  first={studyIndex === 0}
+                  last={studyIndex === studyOnly.length - 1}
+                  onOutcome={onOutcome}
+                  onMinutes={onMinutes}
+                  onMethod={onMethod}
+                  onPerformance={onPerformance}
+                  onMove={onMove}
+                />
+              );
+            })}
           </ul>
         </div>
       </section>

@@ -45,6 +45,8 @@ export function ensureSchema() {
         plan_date TEXT NOT NULL,
         available_minutes INTEGER NOT NULL,
         focus TEXT NOT NULL,
+        start_time TEXT,
+        daily_minutes INTEGER,
         updated_at INTEGER DEFAULT (unixepoch()),
         PRIMARY KEY (user_id, plan_date)
       )`);
@@ -79,13 +81,16 @@ export function ensureSchema() {
         outcome TEXT,
         actual_minutes INTEGER,
         edited INTEGER NOT NULL DEFAULT 0,
-        applied_minutes INTEGER NOT NULL DEFAULT 0
+        applied_minutes INTEGER NOT NULL DEFAULT 0,
+        performance TEXT
       )`);
     // Older databases predate these columns; SQLite has no IF NOT EXISTS for
     // ADD COLUMN, so try each and ignore the duplicate-column error.
     for (const [table, col] of [
       ["planner_blocks", "applied_minutes INTEGER NOT NULL DEFAULT 0"],
+      ["planner_blocks", "performance TEXT"],
       ["planner_checkins", "start_time TEXT"],
+      ["planner_checkins", "daily_minutes INTEGER"],
     ]) {
       try {
         await client.execute(`ALTER TABLE ${table} ADD COLUMN ${col}`);

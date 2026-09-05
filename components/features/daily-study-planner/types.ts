@@ -31,6 +31,7 @@ export interface Block {
   actualMinutes: number | null;
   edited: boolean;
   appliedMinutes: number;
+  performance: "independent" | "with-help" | "not-yet" | null;
 }
 
 export interface UnscheduledItem {
@@ -58,6 +59,8 @@ export interface Checkin {
   focus: Focus;
   /** 'HH:MM' local time the session starts, for clock times on blocks. */
   startTime?: string | null;
+  /** Minutes expected on a typical future day. Null/undefined = unknown. */
+  dailyMinutes?: number | null;
 }
 
 /** 'HH:MM' for right now, in the student's local time. */
