@@ -81,8 +81,11 @@ test("reflectionsDone ignores unknown session keys", () => {
 });
 
 test("work scopes cover the non-subject areas", () => {
-  assert.deepEqual([...WORK_SCOPES], ["ee", "tok", "cas"]);
+  // TOK's two components are scoped separately — they are done months apart
+  // and should not share one pile of goals and notes.
+  assert.deepEqual([...WORK_SCOPES], ["ee", "tok-exhibition", "tok-essay", "cas"]);
   assert.ok(isValidScope("ee"));
+  assert.ok(!isValidScope("tok"), "bare 'tok' is not a scope; use the component scopes");
   assert.ok(!isValidScope("subject:4"));
   assert.ok(!isValidScope(""));
 });

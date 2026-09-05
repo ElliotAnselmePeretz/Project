@@ -250,6 +250,53 @@ export const workNotes = sqliteTable(
   (t) => [index("work_notes_user_scope").on(t.userId, t.scope)],
 );
 
+/**
+ * One row per TOK component — the exhibition and the essay. They are separate
+ * pieces of work months apart, so each keeps its own stage, deadlines, word
+ * count and predicted grade.
+ */
+export const tokComponents = sqliteTable(
+  "tok_components",
+  {
+    userId: text("user_id").notNull(),
+    /** "exhibition" or "essay". */
+    component: text("component").notNull(),
+    /** The IA prompt for the exhibition; the prescribed title for the essay. */
+    title: text("title"),
+    stage: text("stage"),
+    wordCount: integer("word_count"),
+    wordLimit: integer("word_limit"),
+    /** A to E, like the extended essay. */
+    predictedGrade: text("predicted_grade"),
+    draftDueAt: integer("draft_due_at", { mode: "timestamp" }),
+    finalDueAt: integer("final_due_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.component] })],
+);
+
+/**
+ * The exhibition's three objects. Fixed numbered slots rather than a list,
+ * because there are exactly three.
+ */
+export const tokObjects = sqliteTable(
+  "tok_objects",
+  {
+    userId: text("user_id").notNull(),
+    slot: integer("slot").notNull(),
+    name: text("name"),
+    /** Where the object comes from — its specific real-world context. */
+    context: text("context"),
+    /** How it answers the prompt. */
+    link: text("link"),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.slot] })],
+);
+
+export type TokComponentRow = typeof tokComponents.$inferSelect;
+export type TokObject = typeof tokObjects.$inferSelect;
+
 export type ExtendedEssay = typeof extendedEssays.$inferSelect;
 export type EeReflection = typeof eeReflections.$inferSelect;
 export type WorkGoal = typeof workGoals.$inferSelect;

@@ -193,6 +193,30 @@ export function ensureSchema() {
     await client.execute(
       `CREATE INDEX IF NOT EXISTS work_notes_user_scope ON work_notes (user_id, scope)`,
     );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS tok_components (
+        user_id TEXT NOT NULL,
+        component TEXT NOT NULL,
+        title TEXT,
+        stage TEXT,
+        word_count INTEGER,
+        word_limit INTEGER,
+        predicted_grade TEXT,
+        draft_due_at INTEGER,
+        final_due_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, component)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS tok_objects (
+        user_id TEXT NOT NULL,
+        slot INTEGER NOT NULL,
+        name TEXT,
+        context TEXT,
+        link TEXT,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, slot)
+      )`);
   })();
   return ready;
 }

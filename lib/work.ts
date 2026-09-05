@@ -6,12 +6,15 @@
  * Subject goals and notes predate this and still live in their own tables. If
  * those are ever folded in, "subject:4" is the scope shape to use.
  */
-export const WORK_SCOPES = ["ee", "tok", "cas"] as const;
+export const WORK_SCOPES = ["ee", "tok-exhibition", "tok-essay", "cas"] as const;
 export type WorkScope = (typeof WORK_SCOPES)[number];
 
 export const SCOPE_LABELS: Record<WorkScope, string> = {
   ee: "Extended essay",
-  tok: "TOK",
+  // TOK's two components are done months apart, so they keep separate goals
+  // and notes rather than sharing one "tok" pile.
+  "tok-exhibition": "TOK exhibition",
+  "tok-essay": "TOK essay",
   cas: "CAS",
 };
 
