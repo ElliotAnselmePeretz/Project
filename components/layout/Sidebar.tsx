@@ -9,6 +9,12 @@ interface NavItem {
   href: string;
   label: string;
   icon: string;
+  /**
+   * Shown nested underneath while this item or one of them is the current
+   * section. Unlike a group, the parent still navigates — nothing here is a
+   * toggle, the extra links just appear once you are in that part of the app.
+   */
+  reveals?: NavItem[];
 }
 
 interface NavGroup {
@@ -25,14 +31,18 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 
 const NAV: NavEntry[] = [
   { href: "/", label: "Deadlines", icon: "◷" },
-  { href: "/subjects", label: "Subjects", icon: "◈" },
   {
-    // Grouped so the sidebar stays short. Everything the diploma asks for
-    // outside your subjects lives in here.
+    href: "/subjects",
+    label: "Subjects",
+    icon: "◈",
+    // An IA belongs to a subject, so it lives here rather than in the core.
+    reveals: [{ href: "/ia", label: "IA", icon: "▤" }],
+  },
+  {
+    // The actual DP core: TOK, EE and CAS. Grouped so the sidebar stays short.
     label: "DP core",
     icon: "◆",
     children: [
-      { href: "/ia", label: "IA", icon: "▤" },
       { href: "/ee", label: "EE", icon: "❐" },
       { href: "/tok", label: "TOK", icon: "◍" },
       { href: "/cas", label: "CAS", icon: "❖" },
@@ -155,28 +165,89 @@ function NavGroupLinks({
   );
 }
 
+/**
+ * A normal link that grows extra links beneath it while you are in its part of
+ * the app. The revealed links stay while one of them is current, so clicking
+ * IA does not make IA disappear.
+ */
+function NavItemWithReveals({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const parentActive = isActive(pathname, item.href);
+  const revealed = item.reveals ?? [];
+  const childActive = revealed.some((child) => isActive(pathname, child.href));
+  const show = parentActive || childActive;
+
+  return (
+    <div>
+      <NavLink item={item} active={parentActive} onNavigate={onNavigate} />
+
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ${
+          show ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+            {revealed.map((child) => (
+              <NavLink
+                key={child.href}
+                item={child}
+                active={isActive(pathname, child.href)}
+                nested
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="stagger space-y-1">
-      {NAV.map((entry) =>
-        isGroup(entry) ? (
-          <NavGroupLinks
-            key={entry.label}
-            group={entry}
-            pathname={pathname}
-            onNavigate={onNavigate}
-          />
-        ) : (
+      {NAV.map((entry) => {
+        if (isGroup(entry)) {
+          return (
+            <NavGroupLinks
+              key={entry.label}
+              group={entry}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          );
+        }
+
+        if (entry.reveals?.length) {
+          return (
+            <NavItemWithReveals
+              key={entry.href}
+              item={entry}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          );
+        }
+
+        return (
           <NavLink
             key={entry.href}
             item={entry}
             active={isActive(pathname, entry.href)}
             onNavigate={onNavigate}
           />
-        ),
-      )}
+        );
+      })}
     </nav>
   );
 }
