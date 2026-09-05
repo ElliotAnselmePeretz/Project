@@ -22,6 +22,7 @@ app/globals.css                  design tokens — colours, radii, shadows
 components/ui/                   the design system (shared primitives)
 components/layout/               site chrome: AppShell, nav, sign-in
 components/features/<feature>/   one folder per feature, built from ui/
+                                 (deadlines, subjects, daily-study-planner)
 lib/                             server logic, integrations, database
 ```
 

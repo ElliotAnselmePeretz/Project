@@ -128,3 +128,79 @@ export type Assessment = typeof assessments.$inferSelect;
 export type SubjectTarget = typeof subjectTargets.$inferSelect;
 export type SubjectGoal = typeof subjectGoals.$inferSelect;
 export type SubjectNote = typeof subjectNotes.$inferSelect;
+
+/* --- Daily study planner --------------------------------------------------
+ *
+ * `planDate` is a 'YYYY-MM-DD' string in the *student's* local timezone, sent
+ * by the client. The server has no reliable way to know that timezone, and
+ * storing an instant would put a plan on the wrong day for anyone not on UTC.
+ */
+
+/** One check-in per student per day: how long they have, and how focused. */
+export const plannerCheckins = sqliteTable(
+  "planner_checkins",
+  {
+    userId: text("user_id").notNull(),
+    planDate: text("plan_date").notNull(),
+    availableMinutes: integer("available_minutes").notNull(),
+    focus: text("focus", { enum: ["low", "okay", "good"] }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.planDate] })],
+);
+
+/**
+ * The student's answers about one task, kept across days so a returning user
+ * confirms rather than retypes. Keyed by source, never by plan.
+ */
+export const plannerTaskState = sqliteTable(
+  "planner_task_state",
+  {
+    userId: text("user_id").notNull(),
+    sourceType: text("source_type", { enum: ["deadline", "goal"] }).notNull(),
+    sourceId: text("source_id").notNull(),
+    difficulty: text("difficulty", { enum: ["comfortable", "challenging", "stuck"] })
+      .notNull()
+      .default("comfortable"),
+    remainingMinutes: integer("remaining_minutes").notNull().default(60),
+    purpose: text("purpose", { enum: ["learn", "practise", "write", "submit"] })
+      .notNull()
+      .default("practise"),
+    /** False while the purpose is our guess from the title rather than the student's choice. */
+    purposeConfirmed: integer("purpose_confirmed", { mode: "boolean" }).notNull().default(false),
+    /** Whether an uncertain imported date has been confirmed by the student. */
+    dateConfirmed: integer("date_confirmed", { mode: "boolean" }).notNull().default(false),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.sourceType, t.sourceId] })],
+);
+
+/** The generated plan, one row per block, ordered by `position`. */
+export const plannerBlocks = sqliteTable(
+  "planner_blocks",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    planDate: text("plan_date").notNull(),
+    position: integer("position").notNull(),
+    kind: text("kind", { enum: ["study", "unblock", "break"] }).notNull(),
+    minutes: integer("minutes").notNull(),
+    taskKey: text("task_key"),
+    title: text("title").notNull(),
+    subject: text("subject"),
+    purpose: text("purpose"),
+    method: text("method"),
+    reason: text("reason"),
+    urgency: text("urgency"),
+    /** How the block went. Never written back to the source assignment. */
+    outcome: text("outcome", { enum: ["finished", "progress", "stuck"] }),
+    actualMinutes: integer("actual_minutes"),
+    /** Set when the student changed this block, so a replan preserves it. */
+    edited: integer("edited", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [index("planner_blocks_user_date").on(t.userId, t.planDate, t.position)],
+);
+
+export type PlannerCheckin = typeof plannerCheckins.$inferSelect;
+export type PlannerTaskState = typeof plannerTaskState.$inferSelect;
+export type PlannerBlock = typeof plannerBlocks.$inferSelect;

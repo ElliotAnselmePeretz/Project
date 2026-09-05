@@ -39,6 +39,50 @@ export function ensureSchema() {
         dismissed INTEGER NOT NULL DEFAULT 0,
         updated_at INTEGER DEFAULT (unixepoch())
       )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS planner_checkins (
+        user_id TEXT NOT NULL,
+        plan_date TEXT NOT NULL,
+        available_minutes INTEGER NOT NULL,
+        focus TEXT NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, plan_date)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS planner_task_state (
+        user_id TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        source_id TEXT NOT NULL,
+        difficulty TEXT NOT NULL DEFAULT 'comfortable',
+        remaining_minutes INTEGER NOT NULL DEFAULT 60,
+        purpose TEXT NOT NULL DEFAULT 'practise',
+        purpose_confirmed INTEGER NOT NULL DEFAULT 0,
+        date_confirmed INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, source_type, source_id)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS planner_blocks (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        plan_date TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        minutes INTEGER NOT NULL,
+        task_key TEXT,
+        title TEXT NOT NULL,
+        subject TEXT,
+        purpose TEXT,
+        method TEXT,
+        reason TEXT,
+        urgency TEXT,
+        outcome TEXT,
+        actual_minutes INTEGER,
+        edited INTEGER NOT NULL DEFAULT 0
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS planner_blocks_user_date ON planner_blocks (user_id, plan_date, position)`,
+    );
     await client.execute(
       `CREATE UNIQUE INDEX IF NOT EXISTS deadlines_user_source_key ON deadlines (user_id, source_key)`,
     );
