@@ -69,6 +69,7 @@ Use `text-accent` / `bg-accent` and it is correct in both.
 | `PageHeader` | Page title, optional subtitle, back link and action |
 | `SectionTitle` | A heading within a page, with an optional action on the right |
 | `EmptyState` | "Nothing here yet" placeholders |
+| `Meter` | A progress bar. `value` is a fraction; pass >1 for an overrun and `tone="danger"` to flag it |
 
 ## Motion
 

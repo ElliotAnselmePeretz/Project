@@ -40,8 +40,8 @@ export function IaOverview() {
   return (
     <div className="space-y-4">
       <Banner tone="info">
-        These are the six internal assessments you have to produce. Tracking — deadlines, drafts,
-        word counts and reflections — is being built next.
+        These are the six internal assessments you have to produce. Open one to track its stage,
+        length, criteria and supervisor feedback.
       </Banner>
 
       <div className="stagger space-y-2">
@@ -61,10 +61,10 @@ export function IaOverview() {
                   </div>
                 </div>
                 <Link
-                  href={`/subjects/${s.groupNumber}`}
+                  href={`/subjects/${s.groupNumber}/ia`}
                   className="shrink-0 text-sm font-medium text-accent hover:underline"
                 >
-                  Open subject →
+                  Open {label} →
                 </Link>
               </CardBody>
             </Card>
