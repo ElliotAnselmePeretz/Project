@@ -302,6 +302,32 @@ export type EeReflection = typeof eeReflections.$inferSelect;
 export type WorkGoal = typeof workGoals.$inferSelect;
 export type WorkNote = typeof workNotes.$inferSelect;
 
+/**
+ * One CAS experience. The three strands are separate flags rather than one
+ * value, because a single activity often serves more than one — coaching a
+ * team is Activity and Service.
+ */
+export const casActivities = sqliteTable(
+  "cas_activities",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    hours: real("hours").notNull().default(0),
+    creativity: integer("creativity", { mode: "boolean" }).notNull().default(false),
+    activity: integer("activity", { mode: "boolean" }).notNull().default(false),
+    service: integer("service", { mode: "boolean" }).notNull().default(false),
+    /** The CAS project, as opposed to an ordinary experience. */
+    isProject: integer("is_project", { mode: "boolean" }).notNull().default(false),
+    happenedAt: integer("happened_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("cas_activities_user").on(t.userId)],
+);
+
+export type CasActivity = typeof casActivities.$inferSelect;
+
 export type SubjectIa = typeof subjectIas.$inferSelect;
 export type IaCriterion = typeof iaCriteria.$inferSelect;
 export type IaFeedbackEntry = typeof iaFeedback.$inferSelect;

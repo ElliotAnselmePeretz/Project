@@ -217,6 +217,23 @@ export function ensureSchema() {
         updated_at INTEGER DEFAULT (unixepoch()),
         PRIMARY KEY (user_id, slot)
       )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS cas_activities (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        hours REAL NOT NULL DEFAULT 0,
+        creativity INTEGER NOT NULL DEFAULT 0,
+        activity INTEGER NOT NULL DEFAULT 0,
+        service INTEGER NOT NULL DEFAULT 0,
+        is_project INTEGER NOT NULL DEFAULT 0,
+        happened_at INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS cas_activities_user ON cas_activities (user_id)`,
+    );
   })();
   return ready;
 }
