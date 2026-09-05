@@ -80,6 +80,15 @@ Use these rather than writing keyframes in a component:
 | `animate-fade-in` | Plain fade — overlays and backdrops |
 | `animate-slide-in` | Slide in from the left — the mobile drawer |
 | `stagger` | On a parent: children enter one after another |
+| `cascade` | Like `stagger` but slower and deeper — for content being laid out, such as a freshly built plan |
+| `animate-pop` | Scale-and-settle. Selection states, summary cards |
+| `animate-check` | Overshooting tick for a just-confirmed state |
+| `animate-draw-down` | Draws a vertical rail downward — timelines |
+| `animate-shimmer` | Loading placeholder sweep |
+
+Two components carry motion of their own: `Progress` animates its bar to the new
+value, and `CountUp` counts to a number instead of snapping (and jumps straight
+there under reduced motion).
 
 Hover and press states are built into the primitives (cards lift, buttons press
 in), so you rarely need to add them yourself.

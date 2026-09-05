@@ -206,6 +206,60 @@ body {
   50%      { opacity: 0.85; }
 }
 
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.94) translateY(6px); }
+  60%  { transform: scale(1.02) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes check-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  55%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* A rail that draws itself downward — used to make a list read as a sequence. */
+@keyframes draw-down {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes grow-width {
+  from { width: 0; }
+}
+
+/* A soft sweep for anything still loading. */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pop       { animation: pop-in 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) both; }
+.animate-check     { animation: check-pop 0.35s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+.animate-draw-down { animation: draw-down 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: top; }
+.animate-grow      { animation: grow-width 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--surface-alt) 25%, var(--surface) 50%, var(--surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* Same cascade as .stagger, but slower and deeper — for a freshly built plan
+   that should feel like it is being laid out rather than simply appearing. */
+.cascade > * { animation: pop-in 0.5s cubic-bezier(0.22, 1.1, 0.36, 1) both; }
+.cascade > *:nth-child(1)  { animation-delay: 0.04s; }
+.cascade > *:nth-child(2)  { animation-delay: 0.10s; }
+.cascade > *:nth-child(3)  { animation-delay: 0.16s; }
+.cascade > *:nth-child(4)  { animation-delay: 0.22s; }
+.cascade > *:nth-child(5)  { animation-delay: 0.28s; }
+.cascade > *:nth-child(6)  { animation-delay: 0.34s; }
+.cascade > *:nth-child(7)  { animation-delay: 0.40s; }
+.cascade > *:nth-child(8)  { animation-delay: 0.46s; }
+.cascade > *:nth-child(9)  { animation-delay: 0.52s; }
+.cascade > *:nth-child(10) { animation-delay: 0.58s; }
+.cascade > *:nth-child(n + 11) { animation-delay: 0.62s; }
+
 .animate-fade-up   { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-fade-in   { animation: fade-in 0.4s ease both; }
 .animate-slide-in  { animation: slide-in-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -283,6 +337,7 @@ body {
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;

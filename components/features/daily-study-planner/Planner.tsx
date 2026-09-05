@@ -112,7 +112,15 @@ export function Planner() {
     }
   }
 
-  if (loading) return <p className="text-sm text-muted">Loading…</p>;
+  if (loading) {
+    return (
+      <div className="space-y-2" aria-busy="true" aria-label="Loading your planner">
+        <div className="animate-shimmer h-20 rounded-lg" />
+        <div className="animate-shimmer h-28 rounded-lg" />
+        <div className="animate-shimmer h-28 rounded-lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

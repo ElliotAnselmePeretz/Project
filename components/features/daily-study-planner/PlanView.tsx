@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { URGENCY_LABELS } from "@/lib/daily-study-planner";
-import { Badge, Banner, Button, Card, CardBody, Input, SectionTitle } from "@/components/ui";
+import { Badge, Banner, Button, Card, CardBody, CountUp, Input, Progress, SectionTitle } from "@/components/ui";
 import type { Block, PlanResponse } from "./types";
 
 const OUTCOMES = [
@@ -26,17 +26,32 @@ function BlockRow({
 
   if (block.kind === "break") {
     return (
-      <li className="flex items-center gap-3 px-1 py-1.5 text-xs text-faint">
-        <span className="h-px flex-1 bg-border" />
-        {block.minutes}m break
-        <span className="h-px flex-1 bg-border" />
+      <li className="relative flex items-center gap-3 py-2 pl-9 text-xs text-faint">
+        <span
+          className="absolute left-[9px] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-border-strong"
+          aria-hidden="true"
+        />
+        <span className="animate-fade-in">{block.minutes}m break</span>
       </li>
     );
   }
 
   return (
-    <li>
-      <Card className={block.outcome ? "opacity-70" : ""}>
+    <li className="relative pl-9">
+      <span
+        className={`absolute left-[4px] top-5 z-[1] grid h-4 w-4 place-items-center rounded-full border-2 transition-all duration-500 ${
+          block.outcome
+            ? "border-success bg-success"
+            : block.kind === "unblock"
+              ? "border-warning bg-bg"
+              : "border-accent bg-bg"
+        }`}
+        aria-hidden="true"
+      >
+        {block.outcome && <span className="animate-check text-[9px] leading-none text-bg">✓</span>}
+      </span>
+
+      <Card className={`transition-all duration-500 ${block.outcome ? "opacity-70" : ""}`}>
         <CardBody className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -98,8 +113,8 @@ function BlockRow({
                 aria-pressed={block.outcome === o.id}
                 className={`rounded-md border px-3 py-1.5 text-xs transition-all duration-200 active:scale-[0.97] ${
                   block.outcome === o.id
-                    ? "border-accent bg-accent-soft font-medium text-accent"
-                    : "border-border text-muted hover:border-border-strong hover:text-fg"
+                    ? "animate-pop border-accent bg-accent-soft font-medium text-accent"
+                    : "border-border text-muted hover:border-border-strong hover:text-fg hover:-translate-y-px"
                 }`}
               >
                 {o.label}
@@ -126,7 +141,7 @@ function BlockRow({
           </div>
 
           {block.outcome && (
-            <p className="text-xs text-muted">
+            <p className="animate-fade-up text-xs text-muted">
               Recorded as <strong>{OUTCOMES.find((o) => o.id === block.outcome)?.label}</strong>
               {block.actualMinutes != null ? ` · ${block.actualMinutes}m` : ""}. This records study time — it
               does not submit or complete the assignment.
@@ -158,25 +173,39 @@ export function PlanView({
 
   return (
     <div className="space-y-5">
-      <Card>
-        <CardBody className="flex flex-wrap items-center gap-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-fg">
-              {plan.studyMinutes}m of study · {plan.breakMinutes}m of breaks
-              {plan.spareMinutes > 0 ? ` · ${plan.spareMinutes}m spare` : ""}
-            </p>
-            <p className="mt-0.5 text-xs text-muted">
-              {done} of {total} blocks recorded
-            </p>
+      <Card className="animate-pop">
+        <CardBody className="space-y-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-fg">
+                <CountUp value={plan.studyMinutes} />m of study ·{" "}
+                <CountUp value={plan.breakMinutes} />m of breaks
+                {plan.spareMinutes > 0 ? (
+                  <>
+                    {" · "}
+                    <CountUp value={plan.spareMinutes} />m spare
+                  </>
+                ) : null}
+              </p>
+              <p className="mt-0.5 text-xs text-muted">
+                <CountUp value={done} /> of {total} blocks recorded
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onReplan} disabled={busy}>
+                {busy ? "Replanning…" : "Replan"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onStartOver} disabled={busy}>
+                Start over
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={onReplan} disabled={busy}>
-              {busy ? "Replanning…" : "Replan"}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onStartOver} disabled={busy}>
-              Start over
-            </Button>
-          </div>
+          <Progress
+            value={done}
+            max={Math.max(1, total)}
+            tone={done === total ? "success" : "accent"}
+            label="Blocks recorded"
+          />
         </CardBody>
       </Card>
 
@@ -190,17 +219,25 @@ export function PlanView({
 
       <section>
         <SectionTitle>Today&apos;s plan</SectionTitle>
-        <ul className="stagger space-y-2">
-          {plan.blocks.map((b) => (
-            <BlockRow key={b.id} block={b} onOutcome={onOutcome} onMinutes={onMinutes} />
-          ))}
-        </ul>
+        <div className="relative">
+          {/* One continuous thread behind every row, drawn downward on mount so
+              the plan reads as a sequence rather than a pile of cards. */}
+          <span
+            className="animate-draw-down absolute bottom-6 left-[11px] top-6 w-0.5 rounded-full bg-border-strong"
+            aria-hidden="true"
+          />
+          <ul className="cascade relative space-y-1">
+            {plan.blocks.map((b) => (
+              <BlockRow key={b.id} block={b} onOutcome={onOutcome} onMinutes={onMinutes} />
+            ))}
+          </ul>
+        </div>
       </section>
 
       {plan.unscheduled.length > 0 && (
-        <section>
+        <section className="animate-fade-up">
           <SectionTitle>Not scheduled today</SectionTitle>
-          <ul className="space-y-2">
+          <ul className="stagger space-y-2">
             {plan.unscheduled.map((u) => (
               <Card key={u.key}>
                 <CardBody className="flex flex-wrap items-center justify-between gap-2">

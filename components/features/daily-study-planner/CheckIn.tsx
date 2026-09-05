@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Difficulty, Focus, Purpose } from "@/lib/daily-study-planner";
-import { Badge, Banner, Button, Card, CardBody, Field, Input, Select, SectionTitle } from "@/components/ui";
+import { Badge, Banner, Button, Card, CardBody, CountUp, Field, Input, Select, SectionTitle } from "@/components/ui";
 import {
   DIFFICULTY_LABELS,
   FOCUS_LABELS,
@@ -41,8 +41,8 @@ function Choice<T extends string>({
           aria-pressed={value === opt}
           className={`rounded-md border px-3 py-1.5 text-xs transition-all duration-200 active:scale-[0.97] ${
             value === opt
-              ? "border-accent bg-accent-soft font-medium text-accent"
-              : "border-border text-muted hover:border-border-strong hover:text-fg"
+              ? "animate-pop border-accent bg-accent-soft font-medium text-accent"
+              : "border-border text-muted hover:-translate-y-px hover:border-border-strong hover:text-fg"
           }`}
         >
           {labels[opt]}
@@ -103,8 +103,8 @@ export function CheckIn({
                   aria-pressed={minutes === m}
                   className={`rounded-md border px-3 py-1.5 text-xs transition-all duration-200 active:scale-[0.97] ${
                     minutes === m
-                      ? "border-accent bg-accent-soft font-medium text-accent"
-                      : "border-border text-muted hover:border-border-strong hover:text-fg"
+                      ? "animate-pop border-accent bg-accent-soft font-medium text-accent"
+                      : "border-border text-muted hover:-translate-y-px hover:border-border-strong hover:text-fg"
                   }`}
                 >
                   {m >= 60 ? `${m / 60}h` : `${m}m`}
@@ -146,7 +146,10 @@ export function CheckIn({
               const isSelected = selected.has(t.key);
               const uncertainDate = t.dueAt !== null && t.confidence < 1 && !t.dateConfirmed;
               return (
-                <Card key={t.key} className={isSelected ? "" : "opacity-55"}>
+                <Card
+                  key={t.key}
+                  className={`transition-all duration-300 ${isSelected ? "" : "scale-[0.99] opacity-50"}`}
+                >
                   <CardBody className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -189,7 +192,7 @@ export function CheckIn({
                     )}
 
                     {isSelected && (
-                      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                      <div className="animate-fade-up grid gap-3 sm:grid-cols-[1fr_auto]">
                         <div className="space-y-3">
                           <Field label="How does it feel?">
                             <Choice
@@ -239,7 +242,9 @@ export function CheckIn({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
-          {chosen.length} selected · about {Math.round(totalEstimate / 60 * 10) / 10}h of work · {minutes}m available
+          <CountUp value={chosen.length} /> selected · about{" "}
+          <CountUp value={Math.round(totalEstimate / 60 * 10) / 10} />h of work ·{" "}
+          <CountUp value={minutes} />m available
         </p>
         <Button
           variant="primary"
