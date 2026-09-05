@@ -143,6 +143,56 @@ export function ensureSchema() {
     await client.execute(
       `CREATE INDEX IF NOT EXISTS ia_feedback_user_group ON ia_feedback (user_id, group_number)`,
     );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS extended_essays (
+        user_id TEXT PRIMARY KEY,
+        title TEXT,
+        research_question TEXT,
+        subject TEXT,
+        topic TEXT,
+        supervisor TEXT,
+        stage TEXT,
+        word_count INTEGER,
+        word_limit INTEGER,
+        predicted_grade TEXT,
+        draft_due_at INTEGER,
+        final_due_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS ee_reflections (
+        user_id TEXT NOT NULL,
+        session_key TEXT NOT NULL,
+        body TEXT,
+        held_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, session_key)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS work_goals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        text TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS work_goals_user_scope ON work_goals (user_id, scope)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS work_notes (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        title TEXT,
+        body TEXT NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS work_notes_user_scope ON work_notes (user_id, scope)`,
+    );
   })();
   return ready;
 }
