@@ -102,6 +102,47 @@ export function ensureSchema() {
     await client.execute(
       `CREATE INDEX IF NOT EXISTS subject_notes_user_group ON subject_notes (user_id, group_number)`,
     );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS subject_ias (
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        label TEXT,
+        title TEXT,
+        supervisor TEXT,
+        stage TEXT,
+        length_count INTEGER,
+        length_limit INTEGER,
+        draft_due_at INTEGER,
+        final_due_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, group_number)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS ia_criteria (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        max_mark INTEGER NOT NULL,
+        self_mark INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS ia_criteria_user_group ON ia_criteria (user_id, group_number)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS ia_feedback (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        note TEXT NOT NULL,
+        response TEXT,
+        given_at INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS ia_feedback_user_group ON ia_feedback (user_id, group_number)`,
+    );
   })();
   return ready;
 }

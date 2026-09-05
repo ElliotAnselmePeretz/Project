@@ -124,6 +124,70 @@ export const subjectNotes = sqliteTable(
   (t) => [index("subject_notes_user_group").on(t.userId, t.groupNumber)],
 );
 
+/**
+ * The internal assessment for one subject — at most one per subject, so the
+ * group number keys it exactly as the other subject tables do.
+ */
+export const subjectIas = sqliteTable(
+  "subject_ias",
+  {
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    /** "IA" or "IOA" by default, but renameable: schools differ. */
+    label: text("label"),
+    /** Research question for a written IA; the text or extract for an oral. */
+    title: text("title"),
+    supervisor: text("supervisor"),
+    /** One of the stage keys in lib/ia.ts, or null before anything starts. */
+    stage: text("stage"),
+    /** Words for written work, minutes for an oral — see lengthUnitFor(). */
+    lengthCount: integer("length_count"),
+    lengthLimit: integer("length_limit"),
+    draftDueAt: integer("draft_due_at", { mode: "timestamp" }),
+    finalDueAt: integer("final_due_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.groupNumber] })],
+);
+
+/**
+ * A marking criterion the student enters themselves, with their own honest
+ * score against it. Entered rather than shipped: criteria and their mark
+ * allocations differ by subject and syllabus version.
+ */
+export const iaCriteria = sqliteTable(
+  "ia_criteria",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    name: text("name").notNull(),
+    maxMark: integer("max_mark").notNull(),
+    selfMark: integer("self_mark"),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("ia_criteria_user_group").on(t.userId, t.groupNumber)],
+);
+
+/** What a supervisor said, and what the student changed because of it. */
+export const iaFeedback = sqliteTable(
+  "ia_feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    note: text("note").notNull(),
+    response: text("response"),
+    givenAt: integer("given_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("ia_feedback_user_group").on(t.userId, t.groupNumber)],
+);
+
+export type SubjectIa = typeof subjectIas.$inferSelect;
+export type IaCriterion = typeof iaCriteria.$inferSelect;
+export type IaFeedbackEntry = typeof iaFeedback.$inferSelect;
+
 export type Assessment = typeof assessments.$inferSelect;
 export type SubjectTarget = typeof subjectTargets.$inferSelect;
 export type SubjectGoal = typeof subjectGoals.$inferSelect;

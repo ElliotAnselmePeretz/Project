@@ -8,6 +8,12 @@ import { ThemeToggle } from "./ThemeToggle";
 const NAV = [
   { href: "/", label: "Deadlines", icon: "◷" },
   { href: "/subjects", label: "Subjects", icon: "◈" },
+  { href: "/ia", label: "IA", icon: "▤" },
+  // The DP core: EE, TOK and CAS sit together, in the order students meet them.
+  { href: "/ee", label: "EE", icon: "❐" },
+  { href: "/tok", label: "TOK", icon: "◍" },
+  { href: "/cas", label: "CAS", icon: "❖" },
+  { href: "/extracurricular", label: "Extracurricular", icon: "◎" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 
