@@ -1,4 +1,5 @@
 import type { AgendaKind } from "@/lib/dashboard";
+import type { UpdateJson } from "@/components/features/updates/UpdatesList";
 
 /** An agenda item as it arrives over JSON — dates are strings until parsed. */
 export interface AgendaItemJson {
@@ -28,6 +29,8 @@ export interface SubjectSummaryJson {
 }
 
 export interface DashboardData {
+  updates: UpdateJson[];
+  unreadUpdateCount: number;
   agenda: AgendaItemJson[];
   calendar: AgendaItemJson[];
   goals: GoalJson[];

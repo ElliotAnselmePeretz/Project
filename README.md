@@ -84,6 +84,53 @@ The local-mode banner disappears and a **Sign in with Microsoft** button replace
 > schools disable user consent, and only IT can clear it. Local mode keeps
 > working meanwhile.
 
+## Optional: read ManageBac emails from Gmail
+
+For students who forward school email to a personal Gmail. The app reads the
+ManageBac notifications in it and shows them as **Class updates** —
+announcements, grades, comments, changed due dates. It does not add deadlines
+on its own (the ManageBac calendar feed already does that); a task email that
+is not in Deadlines yet gets an "Add to deadlines" button instead.
+
+Access is read-only (`gmail.readonly`). Only a short snippet of each email is
+stored, never the full message. The refresh token is encrypted like the
+ManageBac feed URL.
+
+### 1. Create the Google app
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create a project.
+2. **APIs & Services → Library** → enable **Gmail API**.
+3. **APIs & Services → OAuth consent screen** → User type **External**. Fill in
+   the app name and your email. Add the scope
+   `https://www.googleapis.com/auth/gmail.readonly`.
+4. Under **Test users**, add the Gmail address of everyone who will use it.
+5. **APIs & Services → Credentials → Create credentials → OAuth client ID** →
+   type **Web application**. Add the authorized redirect URI
+   `http://localhost:3000/api/gmail/callback` (and your deployed
+   `https://…/api/gmail/callback` later).
+
+### 2. Configure and connect
+
+Add the client ID and secret to `.env`:
+
+```
+GOOGLE_CLIENT_ID="…apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="…"
+```
+
+Restart `npm run dev`, then **Settings → Gmail → Connect Gmail**, and **Sync**.
+
+### Limits worth knowing
+
+- **Testing mode signs you out weekly.** While the Google app is in "Testing",
+  Google expires access after about 7 days. The app notices and shows
+  **Connect again** in Settings.
+- **Up to 100 test users.** Fine for a class. Publishing the app for everyone
+  requires Google's security assessment for Gmail access, which is paid.
+- **Classification is keyword-based.** ManageBac's email wording is not
+  documented, so anything unrecognised shows as a generic "Update" rather than
+  being dropped. See `lib/class-updates.ts`.
+
 ## Deploying
 
 The app runs free on Vercel (Hobby) with a Turso database. Every push to `main`

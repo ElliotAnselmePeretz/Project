@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { requireUser } from "@/lib/user-request";
 import { buildAgenda, type AgendaItem } from "@/lib/dashboard";
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
     essays,
     tokRows,
     casRows,
+    updates,
   ] = await Promise.all([
     db
       .select()
@@ -56,6 +57,12 @@ export async function GET(req: NextRequest) {
     db.select().from(schema.extendedEssays).where(eq(schema.extendedEssays.userId, userId)),
     db.select().from(schema.tokComponents).where(eq(schema.tokComponents.userId, userId)),
     db.select().from(schema.casActivities).where(eq(schema.casActivities.userId, userId)),
+    db
+      .select()
+      .from(schema.classUpdates)
+      .where(eq(schema.classUpdates.userId, userId))
+      .orderBy(desc(schema.classUpdates.receivedAt))
+      .limit(50),
   ]);
 
   const subjectName = new Map(selections.map((s) => [s.groupNumber, s.subjectName]));
@@ -165,6 +172,8 @@ export async function GET(req: NextRequest) {
   const cas = casTotals(casRows);
 
   return NextResponse.json({
+    updates: updates.slice(0, 5),
+    unreadUpdateCount: updates.filter((u) => !u.read).length,
     agenda,
     calendar: raw.filter((i) => !Number.isNaN(i.dueAt.getTime())),
     goals: goals.slice(0, 8),

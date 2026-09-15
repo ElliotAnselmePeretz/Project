@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Banner, Card, CardBody } from "@/components/ui";
 import { daysUntil, relativeDay } from "@/lib/dashboard";
 import { MonthCalendar } from "./MonthCalendar";
-import { AgendaCard, CoreCard, GoalsCard, SubjectsCard } from "./DashboardCards";
+import { AgendaCard, ClassUpdatesCard, CoreCard, GoalsCard, SubjectsCard } from "./DashboardCards";
 import type { DashboardData } from "./types";
 
 function Stat({ href, value, label, tone = "text-fg" }: { href: string; value: string; label: string; tone?: string }) {
@@ -77,6 +77,8 @@ export function HomeDashboard() {
         <GoalsCard goals={data.goals} total={data.openGoalCount} />
         <CoreCard core={data.core} />
       </div>
+
+      <ClassUpdatesCard updates={data.updates} unread={data.unreadUpdateCount} />
 
       <SubjectsCard subjects={data.subjects} />
     </div>
