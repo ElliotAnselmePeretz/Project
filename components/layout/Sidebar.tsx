@@ -30,7 +30,8 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 }
 
 const NAV: NavEntry[] = [
-  { href: "/", label: "Deadlines", icon: "◷" },
+  { href: "/", label: "Dashboard", icon: "⌂" },
+  { href: "/deadlines", label: "Deadlines", icon: "◷" },
   {
     href: "/subjects",
     label: "Subjects",
