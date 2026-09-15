@@ -84,6 +84,64 @@ The local-mode banner disappears and a **Sign in with Microsoft** button replace
 > schools disable user consent, and only IT can clear it. Local mode keeps
 > working meanwhile.
 
+## Deploying
+
+The app runs free on Vercel (Hobby) with a Turso database. Every push to `main`
+redeploys automatically.
+
+### 1. Database
+
+Turso's free tier is far more than this needs. Create a database, then copy its
+URL and an auth token:
+
+```bash
+turso db create studybase
+turso db show studybase --url        # libsql://...
+turso db tokens create studybase
+```
+
+No migration step: the app creates its tables on first use.
+
+### 2. Sign-in is required in production
+
+Locally the app runs with no sign-in. **A deployment cannot** — local mode is
+disabled in production builds on purpose, because a shared fake session on a
+public URL would hand every visitor the same account and the same data.
+
+So a deploy needs a working Azure app registration. If your school blocks
+consent, register the app for **personal Microsoft accounts** instead
+("Accounts in any organizational directory and personal Microsoft accounts")
+and sign in with an outlook.com account. Sign-in and per-user data then work
+without involving school IT; only Outlook scanning is affected, since it would
+read that personal mailbox rather than the school one. ManageBac is unaffected.
+
+Add the deployed callback URL to the registration:
+
+```
+https://<your-app>.vercel.app/api/auth/callback/microsoft-entra-id
+```
+
+### 3. Environment variables on Vercel
+
+| Variable | Value |
+| --- | --- |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `AUTH_URL` | `https://<your-app>.vercel.app` |
+| `ENCRYPTION_KEY` | a *different* `openssl rand -base64 32` |
+| `DATABASE_URL` | the `libsql://...` URL from Turso |
+| `DATABASE_AUTH_TOKEN` | the Turso token |
+| `AUTH_MICROSOFT_ENTRA_ID_ID` | Application (client) ID |
+| `AUTH_MICROSOFT_ENTRA_ID_SECRET` | client secret **Value** |
+| `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | `common` for personal accounts |
+
+`ENCRYPTION_KEY` must not change once set: it decrypts stored ManageBac feed
+URLs, and a new key makes existing ones unreadable.
+
+### 4. Deploy
+
+Import the repo at [vercel.com/new](https://vercel.com/new), paste the
+variables, deploy. After that, pushing to `main` is the deploy.
+
 ## Tests
 
 ```bash
