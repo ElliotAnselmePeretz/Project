@@ -28,8 +28,9 @@ export function PetChooser({ onAdopted }: { onAdopted: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        Pick a companion. Completing a deadline earns a meal; meals feed your pet and it levels up.
-        Entirely optional — you can hide it whenever you like.
+        Pick a companion. Finishing a deadline, a subject goal or an IA/EE/TOK goal earns a meal;
+        meals feed your pet and it grows as it levels. Entirely optional — you can hide it whenever
+        you like.
       </p>
 
       <div className="stagger grid gap-3 sm:grid-cols-3">

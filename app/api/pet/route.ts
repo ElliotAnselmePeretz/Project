@@ -2,18 +2,37 @@ import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema, schema } from "@/lib/db";
 import { getGraphToken } from "@/lib/graph-token";
-import { SPECIES, currentHunger, feed, levelFromXp, levelProgress, moodFor, type Species } from "@/lib/pets";
+import {
+  SPECIES,
+  currentHunger,
+  feed,
+  growthFor,
+  levelFromXp,
+  levelProgress,
+  moodFor,
+  type Species,
+} from "@/lib/pets";
+import { streakFrom } from "@/lib/deadline-utils";
 
 /** Shape sent to the client: stored values plus everything derived from time. */
-function present(pet: typeof schema.pets.$inferSelect) {
+function present(pet: typeof schema.pets.$inferSelect, meals: Date[] = []) {
   const hunger = currentHunger(pet.hunger, pet.lastFedAt);
+  const level = levelFromXp(pet.xp);
   return {
+    growth: growthFor(level),
+    care: {
+      mealsEarned: meals.length,
+      careStreak: streakFrom(meals),
+      daysTogether: pet.createdAt
+        ? Math.max(1, Math.floor((Date.now() - pet.createdAt.getTime()) / 86_400_000) + 1)
+        : 1,
+    },
     species: pet.species,
     name: pet.name,
     hunger: Math.round(hunger),
     mood: moodFor(hunger),
     xp: pet.xp,
-    level: levelFromXp(pet.xp),
+    level,
     progress: levelProgress(pet.xp),
     meals: pet.meals,
     hidden: pet.hidden,
@@ -32,7 +51,14 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const [pet] = await db.select().from(schema.pets).where(eq(schema.pets.userId, userId));
-  return NextResponse.json({ pet: pet ? present(pet) : null });
+  if (!pet) return NextResponse.json({ pet: null });
+
+  const meals = await db
+    .select({ earnedAt: schema.petMeals.earnedAt })
+    .from(schema.petMeals)
+    .where(eq(schema.petMeals.userId, userId));
+
+  return NextResponse.json({ pet: present(pet, meals.map((m) => m.earnedAt)) });
 }
 
 /** Adopt a pet. */

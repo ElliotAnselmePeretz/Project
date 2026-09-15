@@ -342,3 +342,28 @@ export const pets = sqliteTable("pets", {
 
 export type Pet = typeof pets.$inferSelect;
 export type NewPet = typeof pets.$inferInsert;
+
+/**
+ * One row per meal ever earned, keyed by what earned it.
+ *
+ * The unique constraint is the whole point: a meal is paid once per piece of
+ * work, ever. Completing something, undoing it and completing it again cannot
+ * mint a second meal, however the user gets there. It also gives the pet an
+ * honest history — total meals and a care streak come from real rows rather
+ * than a counter that could drift.
+ */
+export const petMeals = sqliteTable(
+  "pet_meals",
+  {
+    userId: text("user_id").notNull(),
+    sourceType: text("source_type", { enum: ["deadline", "subject-goal", "work-goal"] }).notNull(),
+    sourceId: text("source_id").notNull(),
+    earnedAt: integer("earned_at", { mode: "timestamp" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.sourceType, t.sourceId] }),
+    index("pet_meals_user_earned").on(t.userId, t.earnedAt),
+  ],
+);
+
+export type PetMeal = typeof petMeals.$inferSelect;

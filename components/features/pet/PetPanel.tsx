@@ -7,7 +7,21 @@ import { PetChooser } from "./PetChooser";
 import Link from "next/link";
 import { Badge, Banner, Button, Card, CardBody, Input } from "@/components/ui";
 
+export interface Growth {
+  scale: number;
+  sparkles: number;
+  title: string;
+}
+
+export interface Care {
+  mealsEarned: number;
+  careStreak: number;
+  daysTogether: number;
+}
+
 export interface PetView {
+  growth: Growth;
+  care: Care;
   species: Species;
   name: string;
   hunger: number;
@@ -138,11 +152,17 @@ export function PetPanel({ compact = false, refreshKey = 0 }: { compact?: boolea
               fed={justFed}
               body={info.hue.body}
               accent={info.hue.accent}
+              scale={pet.growth?.scale ?? 1}
+              sparkles={pet.growth?.sparkles ?? 0}
             />
           </div>
 
           <div className={`min-w-0 flex-1 ${compact ? "" : "text-center"}`}>
-            <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
+            <div
+              className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 ${
+                compact ? "" : "justify-center"
+              }`}
+            >
               {renaming && !compact ? (
                 <form
                   className="flex items-center gap-2"
@@ -168,7 +188,7 @@ export function PetPanel({ compact = false, refreshKey = 0 }: { compact?: boolea
                 </form>
               ) : (
                 <>
-                  <p className="truncate font-medium text-fg">{pet.name}</p>
+                  <p className="min-w-0 break-words font-medium text-fg">{pet.name}</p>
                   {!compact && (
                     <button
                       onClick={() => {
@@ -235,8 +255,40 @@ export function PetPanel({ compact = false, refreshKey = 0 }: { compact?: boolea
 
             {pet.meals <= 0 && (
               <p className={`mt-2 text-xs text-faint ${compact ? "" : "text-center"}`}>
-                Complete a deadline to earn a meal.
+                {compact
+                  ? "Finish something to earn a meal."
+                  : "Finish a deadline, a subject goal or an IA/EE/TOK goal to earn a meal."}
               </p>
+            )}
+
+            {!compact && pet.care && (
+              <div className="mt-5 grid grid-cols-2 gap-y-3 border-t border-border pt-4 text-center sm:flex sm:items-center sm:justify-center sm:gap-5">
+                <div>
+                  <p className="text-sm font-semibold tabular-nums text-fg">{pet.care.mealsEarned}</p>
+                  <p className="text-[11px] text-muted">meals earned</p>
+                </div>
+                <div className="hidden h-7 w-px bg-border sm:block" />
+                <div>
+                  <p
+                    className={`text-sm font-semibold tabular-nums ${
+                      pet.care.careStreak > 0 ? "text-accent" : "text-fg"
+                    }`}
+                  >
+                    {pet.care.careStreak}
+                  </p>
+                  <p className="text-[11px] text-muted">day care streak</p>
+                </div>
+                <div className="hidden h-7 w-px bg-border sm:block" />
+                <div>
+                  <p className="text-sm font-semibold tabular-nums text-fg">{pet.care.daysTogether}</p>
+                  <p className="text-[11px] text-muted">days together</p>
+                </div>
+                <div className="hidden h-7 w-px bg-border sm:block" />
+                <div>
+                  <p className="text-sm font-semibold text-fg">{pet.growth?.title ?? "New"}</p>
+                  <p className="text-[11px] text-muted">stage</p>
+                </div>
+              </div>
             )}
           </div>
         </CardBody>
@@ -245,7 +297,7 @@ export function PetPanel({ compact = false, refreshKey = 0 }: { compact?: boolea
       {(pet.mood === "hungry" || pet.mood === "sad") && (
         <Banner tone={pet.mood === "sad" ? "danger" : "warning"}>
           {pet.name} is {pet.mood === "sad" ? "very hungry" : "getting hungry"}.{" "}
-          {pet.meals > 0 ? "Feed them?" : "Complete a deadline to earn a meal."}
+          {pet.meals > 0 ? "Feed them?" : "Finish anything to earn a meal."}
         </Banner>
       )}
 

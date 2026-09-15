@@ -14,7 +14,7 @@ export default async function Pet() {
       <Page>
         <PageHeader
           title="Your pet"
-          subtitle="Complete deadlines to earn meals. Feed it, and it grows."
+          subtitle="Finish work anywhere in Studybase to earn meals. Feed your pet, and it grows."
           back={{ href: "/" }}
         />
         <PetPanel />

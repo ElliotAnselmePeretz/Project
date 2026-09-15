@@ -23,6 +23,7 @@ const STYLES = `
                          100%{opacity:0;transform:translateY(-26px) scale(1.1)} }
 @keyframes pet-wisp    { 0%,100%{transform:translateX(0);opacity:.5} 50%{transform:translateX(5px);opacity:.85} }
 @keyframes pet-bounce  { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-12px)} 55%{transform:translateY(0)} 70%{transform:translateY(-5px)} }
+@keyframes pet-orbit   { 0%{opacity:.3;transform:scale(.7)} 50%{opacity:1;transform:scale(1.15)} 100%{opacity:.3;transform:scale(.7)} }
 @keyframes pet-wobble  { 0%,100%{transform:scale(1,1)} 25%{transform:scale(1.08,0.93)} 50%{transform:scale(0.94,1.07)} 75%{transform:scale(1.05,0.96)} }
 @keyframes pet-flap-l  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-24deg)} }
 @keyframes pet-flap-r  { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(24deg)} }
@@ -41,6 +42,7 @@ const STYLES = `
 .pet-spark-2   { animation-delay: .8s; }
 .pet-spark-3   { animation-delay: 1.6s; }
 .pet-wisp      { animation: pet-wisp 3s ease-in-out infinite; transform-box: fill-box; }
+.pet-mark      { animation: pet-orbit 3.2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
 .pet-wobble    { animation: pet-wobble 2.6s ease-in-out infinite; transform-origin: center bottom; transform-box: fill-box; }
 .pet-wing-l    { animation: pet-flap-l 0.9s ease-in-out infinite; transform-origin: right center; transform-box: fill-box; }
 .pet-wing-r    { animation: pet-flap-r 0.9s ease-in-out infinite; transform-origin: left center; transform-box: fill-box; }
@@ -54,7 +56,7 @@ const STYLES = `
 @media (prefers-reduced-motion: reduce) {
   .pet-root, .pet-body, .pet-eye, .pet-leaf-l, .pet-leaf-r,
   .pet-flame, .pet-spark, .pet-wisp, .pet-wobble, .pet-wing-l, .pet-wing-r,
-  .pet-twinkle, .pet-drip, .pet-ring { animation: none !important; }
+  .pet-twinkle, .pet-drip, .pet-ring, .pet-mark { animation: none !important; }
 }
 `;
 
@@ -281,6 +283,13 @@ const RENDER: Record<Species, typeof Nimbus> = {
   blot: Blot,
 };
 
+/** Milestone marks, placed around the creature rather than on it. */
+const MARK_POSITIONS = [
+  { x: 22, y: 26 },
+  { x: 98, y: 34 },
+  { x: 60, y: 14 },
+];
+
 export function PetCreature({
   species,
   mood = "content",
@@ -288,6 +297,8 @@ export function PetCreature({
   fed = false,
   body,
   accent,
+  scale = 1,
+  sparkles = 0,
 }: {
   species: Species;
   mood?: Mood;
@@ -296,6 +307,10 @@ export function PetCreature({
   fed?: boolean;
   body: string;
   accent: string;
+  /** Growth scale from the pet's level. */
+  scale?: number;
+  /** Milestone marks earned by levelling. */
+  sparkles?: number;
 }) {
   const Creature = RENDER[species];
   return (
@@ -309,8 +324,22 @@ export function PetCreature({
         aria-label={`${species}, looking ${mood}`}
       >
         <g className={`pet-root${fed ? " fed" : ""}`}>
-          <Creature mood={mood} body={body} accent={accent} />
+          {/* Scale about the centre so growth does not drift the creature
+              off its own baseline. */}
+          <g transform={`translate(60 60) scale(${scale}) translate(-60 -60)`}>
+            <Creature mood={mood} body={body} accent={accent} />
+          </g>
         </g>
+        {MARK_POSITIONS.slice(0, Math.max(0, Math.min(sparkles, 3))).map((pos, i) => (
+          <path
+            key={i}
+            className="pet-mark"
+            style={{ animationDelay: `${i * 0.9}s` }}
+            d={`M${pos.x} ${pos.y - 5} l1.6 3.4 3.4 1.6 -3.4 1.6 -1.6 3.4 -1.6 -3.4 -3.4 -1.6 3.4 -1.6 Z`}
+            fill={accent}
+            opacity="0.85"
+          />
+        ))}
       </svg>
     </div>
   );

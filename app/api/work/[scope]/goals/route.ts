@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { requireUser } from "@/lib/user-request";
 import { isValidScope } from "@/lib/work";
 import { validateText } from "@/lib/subject-manager";
+import { awardMeal } from "@/lib/pet-meals";
 
 type Params = { params: Promise<{ scope: string }> };
 
@@ -72,7 +73,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "No such goal" }, { status: 404 });
   }
 
-  return NextResponse.json({ id, done });
+  const mealEarned = done ? await awardMeal(r.userId, "work-goal", id) : false;
+
+  return NextResponse.json({ id, done, mealEarned });
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {

@@ -7,6 +7,7 @@ import {
   xpForLevel,
   levelProgress,
   feed,
+  growthFor,
   MAX_HUNGER,
 } from "./pets.ts";
 
@@ -72,4 +73,23 @@ test("feeding with no meals changes nothing", () => {
 test("feeding a full pet does not push hunger past the maximum", () => {
   const { state } = feed({ hunger: 95, xp: 0, meals: 1 });
   assert.equal(state.hunger, MAX_HUNGER);
+});
+
+test("growth increases with level and never shrinks", () => {
+  let previous = 0;
+  for (const level of [1, 2, 3, 5, 7, 10, 20]) {
+    const g = growthFor(level);
+    assert.ok(g.scale >= previous, `level ${level} must not shrink the pet`);
+    previous = g.scale;
+  }
+});
+
+test("a new pet starts unadorned, and milestones add marks", () => {
+  assert.equal(growthFor(1).sparkles, 0);
+  assert.equal(growthFor(1).title, "New");
+  assert.ok(growthFor(10).sparkles > growthFor(5).sparkles);
+});
+
+test("growth is bounded so a high level cannot overflow its frame", () => {
+  assert.ok(growthFor(999).scale <= 1.35, "scale must stay inside the viewBox");
 });

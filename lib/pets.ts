@@ -148,3 +148,27 @@ export function feed(state: PetState): { state: PetState; fed: boolean } {
 function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
 }
+
+
+/**
+ * Visible growth.
+ *
+ * Levelling previously changed only a number. A pet that visibly grows gives
+ * the level something to mean, without adding a second currency to manage.
+ */
+export interface Growth {
+  /** Scale applied to the creature, so it fills more of its frame over time. */
+  scale: number;
+  /** Earned at milestones; rendered as small marks around the creature. */
+  sparkles: number;
+  /** Shown once reached, so progress is legible rather than implied. */
+  title: string;
+}
+
+export function growthFor(level: number): Growth {
+  if (level >= 10) return { scale: 1.28, sparkles: 3, title: "Constant" };
+  if (level >= 7) return { scale: 1.2, sparkles: 2, title: "Flourishing" };
+  if (level >= 5) return { scale: 1.12, sparkles: 1, title: "Thriving" };
+  if (level >= 3) return { scale: 1.06, sparkles: 0, title: "Settled" };
+  return { scale: 1, sparkles: 0, title: "New" };
+}

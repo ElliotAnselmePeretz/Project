@@ -3,6 +3,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db, ensureSchema, schema } from "@/lib/db";
 import { getGraphToken } from "@/lib/graph-token";
 import { cleanTitle } from "@/lib/deadline-utils";
+import { awardMeal } from "@/lib/pet-meals";
 
 async function requireUser(req: NextRequest) {
   await ensureSchema();
