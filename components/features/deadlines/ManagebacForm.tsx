@@ -32,7 +32,12 @@ export function ManagebacForm() {
       }
       setConfigured(data.managebacConfigured);
       setUrl("");
-      setMessage({ text: value ? "Saved. Go back and press Sync now." : "Removed.", ok: true });
+      setMessage({
+        text: value
+          ? `Saved — the feed has ${data.events} event${data.events === 1 ? "" : "s"}. Go back and press Sync now.`
+          : "Removed.",
+        ok: true,
+      });
     } finally {
       setSaving(false);
     }
