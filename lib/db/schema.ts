@@ -484,3 +484,52 @@ export const plannerBlocks = sqliteTable(
 export type PlannerCheckin = typeof plannerCheckins.$inferSelect;
 export type PlannerTaskState = typeof plannerTaskState.$inferSelect;
 export type PlannerBlock = typeof plannerBlocks.$inferSelect;
+
+/**
+ * A student's connected Gmail. The refresh token is encrypted at rest with the
+ * same key as the ManageBac feed URL: it grants read access to the inbox, so it
+ * is treated as a password.
+ */
+export const gmailConnections = sqliteTable("gmail_connections", {
+  userId: text("user_id").primaryKey(),
+  email: text("email").notNull(),
+  refreshTokenEnc: text("refresh_token_enc").notNull(),
+  /** Set when Google rejects the token, so the UI can ask to reconnect. */
+  needsReconnect: integer("needs_reconnect", { mode: "boolean" }).notNull().default(false),
+  lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
+  connectedAt: integer("connected_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+});
+
+/**
+ * Something that happened in a class, read from a ManageBac notification
+ * email. Only a short snippet is kept, never the full email — enough to know
+ * what it was about, with the original still in Gmail.
+ */
+export const classUpdates = sqliteTable(
+  "class_updates",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    /** Gmail's message id, so syncing the same email twice does nothing. */
+    messageId: text("message_id").notNull(),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    snippet: text("snippet"),
+    /** Which of the student's subjects it is about, when that could be told. */
+    subject: text("subject"),
+    /** For task and change emails, the date they mention, if any. */
+    dueAt: integer("due_at", { mode: "timestamp" }),
+    /** The deadline this matches, or that was created from it. */
+    deadlineId: text("deadline_id"),
+    receivedAt: integer("received_at", { mode: "timestamp" }).notNull(),
+    read: integer("read", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("class_updates_user_message").on(t.userId, t.messageId),
+    index("class_updates_user_received").on(t.userId, t.receivedAt),
+  ],
+);
+
+export type GmailConnection = typeof gmailConnections.$inferSelect;
+export type ClassUpdate = typeof classUpdates.$inferSelect;

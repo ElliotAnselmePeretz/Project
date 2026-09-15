@@ -335,6 +335,36 @@ export function ensureSchema() {
     await client.execute(
       `CREATE INDEX IF NOT EXISTS cas_activities_user ON cas_activities (user_id)`,
     );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS gmail_connections (
+        user_id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        refresh_token_enc TEXT NOT NULL,
+        needs_reconnect INTEGER NOT NULL DEFAULT 0,
+        last_synced_at INTEGER,
+        connected_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS class_updates (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        title TEXT NOT NULL,
+        snippet TEXT,
+        subject TEXT,
+        due_at INTEGER,
+        deadline_id TEXT,
+        received_at INTEGER NOT NULL,
+        read INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE UNIQUE INDEX IF NOT EXISTS class_updates_user_message ON class_updates (user_id, message_id)`,
+    );
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS class_updates_user_received ON class_updates (user_id, received_at)`,
+    );
   })();
   return ready;
 }

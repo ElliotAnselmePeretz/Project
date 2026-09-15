@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Badge, Card, CardBody, CardHeader, EmptyState, Meter } from "@/components/ui";
 import { KIND_LABELS, daysUntil, relativeDay } from "@/lib/dashboard";
 import { KIND_TONES, type AgendaItemJson, type DashboardData, type GoalJson } from "./types";
+import { KIND_META } from "@/lib/class-updates";
+import { KIND_TONE, type UpdateJson } from "@/components/features/updates/UpdatesList";
 
 function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -204,6 +206,49 @@ export function SubjectsCard({ subjects }: { subjects: DashboardData["subjects"]
               </tbody>
             </table>
           </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+/* --------------------------------------------------------- class updates */
+
+export function ClassUpdatesCard({ updates, unread }: { updates: UpdateJson[]; unread: number }) {
+  return (
+    <Card>
+      <CardHeader
+        title="Class updates"
+        subtitle={unread > 0 ? `${unread} unread` : undefined}
+        action={<CardLink href="/updates">All updates →</CardLink>}
+      />
+      <CardBody>
+        {updates.length === 0 ? (
+          <EmptyState
+            title="No class updates"
+            hint="Connect Gmail in Settings to see ManageBac announcements, grades and comments here."
+          />
+        ) : (
+          <ul className="divide-y divide-border">
+            {updates.map((u) => (
+              <li key={u.id}>
+                <Link href="/updates" className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 hover:bg-surface-alt">
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 w-2 shrink-0 rounded-full ${u.read ? "bg-transparent" : "bg-accent"}`}
+                  />
+                  <span className="w-[6.5rem] shrink-0">
+                    <Badge tone={KIND_TONE[u.kind]}>{KIND_META[u.kind].label}</Badge>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm ${u.read ? "text-muted" : "font-medium text-fg"}`}>{u.title}</p>
+                    {u.subject && <p className="truncate text-xs text-muted">{u.subject}</p>}
+                  </div>
+                  <span className="shrink-0 text-xs text-faint">{relativeDay(new Date(u.receivedAt))}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </CardBody>
     </Card>
