@@ -234,22 +234,48 @@ function sectionForPath(pathname: string): string | null {
   return null;
 }
 
+/**
+ * The section that was open on the previous page. The sidebar remounts on
+ * every navigation, so without this each page would start from scratch and
+ * replay the curtain — even when moving between two pages of the same
+ * section. Module scope survives client-side navigation; a full reload resets
+ * it, which is fine.
+ */
+let lastExpanded: string | null | undefined;
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   // Exactly one section is open at a time, so opening DP core puts away the
   // links under Subjects rather than stacking two open sections.
   //
-  // Starts closed even when the current page belongs to a section: the sidebar
-  // remounts on every navigation, and a CSS transition does not run on the
-  // first paint. Opening it a frame later is what makes the curtain actually
-  // play instead of the links simply being there.
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Starts from whatever was open on the previous page, then settles on this
+  // page's section. The curtain therefore only moves when the section really
+  // changes (Deadlines → Subjects), and stays still between pages inside one
+  // (Subjects → IA, EE → TOK). On the very first load it starts already open.
+  const [expanded, setExpanded] = useState<string | null>(() =>
+    lastExpanded === undefined ? sectionForPath(pathname) : lastExpanded,
+  );
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setExpanded(sectionForPath(pathname)));
-    return () => cancelAnimationFrame(frame);
+    const target = sectionForPath(pathname);
+    const settle = () => setExpanded(target);
+
+    // The frame gives the curtain a painted starting point to animate from.
+    // Browsers pause animation frames in hidden tabs, though, so a timer backs
+    // it up: whichever fires first wins, and the menu always ends up right
+    // even if you navigated with the tab in the background.
+    const frame = requestAnimationFrame(settle);
+    const timer = setTimeout(settle, 100);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
   }, [pathname]);
+
+  useEffect(() => {
+    lastExpanded = expanded;
+  }, [expanded]);
 
   return (
     <nav className="space-y-1">
