@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema, schema } from "@/lib/db";
 import { getGraphToken } from "@/lib/graph-token";
 import { encrypt } from "@/lib/crypto";
-import { isPlausibleFeedUrl } from "@/lib/managebac";
+import { isPlausibleFeedUrl, verifyFeed } from "@/lib/managebac";
 
 export async function GET(req: NextRequest) {
   await ensureSchema();
@@ -40,6 +40,11 @@ export async function PUT(req: NextRequest) {
     );
   }
 
+  // Fetch it once before storing. Saving a URL that can never yield deadlines
+  // is worse than refusing it: the app then looks empty rather than misconfigured.
+  const check = await verifyFeed(managebacUrl);
+  if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+
   await db
     .insert(schema.users)
     .values({ id: token.userId, managebacUrlEnc: encrypt(managebacUrl) })
@@ -48,5 +53,5 @@ export async function PUT(req: NextRequest) {
       set: { managebacUrlEnc: encrypt(managebacUrl) },
     });
 
-  return NextResponse.json({ managebacConfigured: true });
+  return NextResponse.json({ managebacConfigured: true, events: check.events });
 }

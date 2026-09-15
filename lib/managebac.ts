@@ -19,6 +19,45 @@ export function isPlausibleFeedUrl(url: string): boolean {
   }
 }
 
+/**
+ * Confirm a URL is really an iCal feed before we store it.
+ *
+ * A hostname check alone is not enough: the calendar *page*
+ * (…/student/calendar) is on the right host but answers 204 with an empty
+ * body. Stored as a feed it produces zero deadlines forever, with no error —
+ * the app looks empty rather than misconfigured, which is exactly how this
+ * went unnoticed.
+ */
+export async function verifyFeed(url: string): Promise<{ ok: true; events: number } | { ok: false; error: string }> {
+  const httpUrl = url.replace(/^webcal:/i, "https:");
+
+  let res: Response;
+  try {
+    res = await fetch(httpUrl, { headers: { Accept: "text/calendar" }, signal: AbortSignal.timeout(15_000) });
+  } catch {
+    return { ok: false, error: "That URL could not be reached. Check it and try again." };
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    return { ok: false, error: "ManageBac refused that URL. Copy a fresh one from Subscribe to Calendar." };
+  }
+  if (!res.ok && res.status !== 204) {
+    return { ok: false, error: `That URL returned ${res.status}. Copy the link from Subscribe to Calendar.` };
+  }
+
+  const text = await res.text();
+  if (!text.includes("BEGIN:VCALENDAR")) {
+    return {
+      ok: false,
+      error:
+        "That is a ManageBac page, not a calendar feed — it contains no calendar data. " +
+        "In ManageBac go to My Workspace → View Full Calendar → Subscribe to Calendar and copy that link.",
+    };
+  }
+
+  return { ok: true, events: (text.match(/BEGIN:VEVENT/g) ?? []).length };
+}
+
 export async function fetchManagebacDeadlines(
   feedUrl: string,
   userId: string,
@@ -33,7 +72,14 @@ export async function fetchManagebacDeadlines(
     throw new Error(`ManageBac feed returned ${res.status}. Re-copy the subscribe URL and try again.`);
   }
 
-  const events = ical.sync.parseICS(await res.text());
+  const raw = await res.text();
+  if (!raw.includes("BEGIN:VCALENDAR")) {
+    throw new Error(
+      "That saved URL is not a calendar feed — re-copy it from ManageBac's Subscribe to Calendar.",
+    );
+  }
+
+  const events = ical.sync.parseICS(raw);
   const out: NewDeadline[] = [];
 
   for (const component of Object.values(events)) {

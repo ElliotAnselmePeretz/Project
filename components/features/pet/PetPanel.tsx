@@ -1,0 +1,307 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { SPECIES_INFO, MAX_HUNGER, type Mood, type Species } from "@/lib/pets";
+import { PetCreature } from "./PetCreature";
+import { PetChooser } from "./PetChooser";
+import Link from "next/link";
+import { Badge, Banner, Button, Card, CardBody, Input } from "@/components/ui";
+
+export interface Growth {
+  scale: number;
+  sparkles: number;
+  title: string;
+}
+
+export interface Care {
+  mealsEarned: number;
+  careStreak: number;
+  daysTogether: number;
+}
+
+export interface PetView {
+  growth: Growth;
+  care: Care;
+  species: Species;
+  name: string;
+  hunger: number;
+  mood: Mood;
+  xp: number;
+  level: number;
+  progress: number;
+  meals: number;
+  hidden: boolean;
+  lastFedAt: string;
+}
+
+const MOOD_COPY: Record<Mood, string> = {
+  happy: "Delighted with you.",
+  content: "Doing fine.",
+  hungry: "Getting peckish.",
+  sad: "Feeling neglected.",
+};
+
+function sinceFed(iso: string): string {
+  const hours = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  if (hours < 1) return "Fed just now";
+  if (hours < 2) return "Fed an hour ago";
+  if (hours < 24) return `Fed ${Math.floor(hours)} hours ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "Fed yesterday" : `Fed ${days} days ago`;
+}
+
+const MOOD_TONE: Record<Mood, "success" | "neutral" | "warning" | "danger"> = {
+  happy: "success",
+  content: "neutral",
+  hungry: "warning",
+  sad: "danger",
+};
+
+export function PetPanel({ compact = false, refreshKey = 0 }: { compact?: boolean; refreshKey?: number }) {
+  const [pet, setPet] = useState<PetView | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [justFed, setJustFed] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState("");
+
+  const load = useCallback(async () => {
+    const res = await fetch("/api/pet");
+    if (res.ok) setPet((await res.json()).pet);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load, refreshKey]);
+
+  async function act(body: Record<string, unknown>) {
+    const res = await fetch("/api/pet", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage(data.error ?? "Something went wrong");
+      return null;
+    }
+    setPet(data.pet);
+    return data;
+  }
+
+  async function onFeed() {
+    setMessage(null);
+    const data = await act({ action: "feed" });
+    if (!data) return;
+    setJustFed(true);
+    setTimeout(() => setJustFed(false), 950);
+    if (data.levelledUp) setMessage(`${data.pet.name} reached level ${data.pet.level}!`);
+  }
+
+  if (loading) return compact ? null : <p className="text-sm text-muted">Loading…</p>;
+
+  if (!pet) {
+    // On the dashboard, invite rather than nag: one quiet line, not the full chooser.
+    return compact ? (
+      <Link href="/pet" className="block">
+        <Card className="transition-colors hover:border-accent/50">
+          <CardBody className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted">
+              Adopt a study pet — completing deadlines feeds it.
+            </p>
+            <span className="text-sm font-medium text-accent">Choose →</span>
+          </CardBody>
+        </Card>
+      </Link>
+    ) : (
+      <PetChooser onAdopted={load} />
+    );
+  }
+
+  const info = SPECIES_INFO[pet.species];
+
+  // Hidden means hidden: the dashboard shows nothing at all. The pet page still
+  // offers a way back, so the choice is never a one-way door.
+  if (pet.hidden && compact) return null;
+
+  if (pet.hidden) {
+    return (
+      <Card>
+        <CardBody className="flex items-center justify-between gap-4">
+          <p className="text-sm text-muted">
+            {pet.name} is hidden. Still fed by your completed deadlines.
+          </p>
+          <Button size="sm" onClick={() => act({ action: "show" })}>
+            Show
+          </Button>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <CardBody className={compact ? "flex items-center gap-4" : "space-y-4"}>
+          <div className={compact ? "" : "flex flex-col items-center"}>
+            <PetCreature
+              species={pet.species}
+              mood={pet.mood}
+              size={compact ? 72 : 150}
+              fed={justFed}
+              body={info.hue.body}
+              accent={info.hue.accent}
+              scale={pet.growth?.scale ?? 1}
+              sparkles={pet.growth?.sparkles ?? 0}
+            />
+          </div>
+
+          <div className={`min-w-0 flex-1 ${compact ? "" : "text-center"}`}>
+            <div
+              className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 ${
+                compact ? "" : "justify-center"
+              }`}
+            >
+              {renaming && !compact ? (
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (await act({ action: "rename", name: draftName })) setRenaming(false);
+                  }}
+                >
+                  <Input
+                    autoFocus
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    maxLength={24}
+                    aria-label="Pet name"
+                    className="w-40"
+                  />
+                  <Button type="submit" variant="primary" size="sm">
+                    Save
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setRenaming(false)}>
+                    Cancel
+                  </Button>
+                </form>
+              ) : (
+                <>
+                  <p className="min-w-0 break-words font-medium text-fg">{pet.name}</p>
+                  {!compact && (
+                    <button
+                      onClick={() => {
+                        setDraftName(pet.name);
+                        setRenaming(true);
+                      }}
+                      className="rounded-sm px-1 text-xs text-faint transition-colors hover:text-accent"
+                      title="Rename"
+                      aria-label={`Rename ${pet.name}`}
+                    >
+                      ✎
+                    </button>
+                  )}
+                  <Badge tone="accent">Lv {pet.level}</Badge>
+                  <Badge tone={MOOD_TONE[pet.mood]}>{MOOD_COPY[pet.mood]}</Badge>
+                </>
+              )}
+            </div>
+
+            {/* Hunger */}
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted">
+                <span>{sinceFed(pet.lastFedAt)}</span>
+                <span>
+                  {pet.hunger}/{MAX_HUNGER}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
+                <div
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${
+                    pet.mood === "sad" ? "bg-danger" : pet.mood === "hungry" ? "bg-warning" : "bg-accent"
+                  }`}
+                  style={{ width: `${pet.hunger}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Level progress */}
+            {!compact && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between text-xs text-muted">
+                  <span>Level {pet.level + 1}</span>
+                  <span>{pet.xp} XP</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
+                  <div
+                    className="h-full rounded-full bg-success transition-[width] duration-700 ease-out"
+                    style={{ width: `${Math.round(pet.progress * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className={`mt-4 flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
+              <Button variant="primary" size="sm" onClick={onFeed} disabled={pet.meals <= 0}>
+                Feed{pet.meals > 0 ? ` (${pet.meals})` : ""}
+              </Button>
+              {!compact && (
+                <Button variant="ghost" size="sm" onClick={() => act({ action: "hide" })}>
+                  Hide
+                </Button>
+              )}
+            </div>
+
+            {pet.meals <= 0 && (
+              <p className={`mt-2 text-xs text-faint ${compact ? "" : "text-center"}`}>
+                {compact
+                  ? "Finish something to earn a meal."
+                  : "Finish a deadline, a subject goal or an IA/EE/TOK goal to earn a meal."}
+              </p>
+            )}
+
+            {!compact && pet.care && (
+              <div className="mt-5 grid grid-cols-2 gap-y-3 border-t border-border pt-4 text-center sm:flex sm:items-center sm:justify-center sm:gap-5">
+                <div>
+                  <p className="text-sm font-semibold tabular-nums text-fg">{pet.care.mealsEarned}</p>
+                  <p className="text-[11px] text-muted">meals earned</p>
+                </div>
+                <div className="hidden h-7 w-px bg-border sm:block" />
+                <div>
+                  <p
+                    className={`text-sm font-semibold tabular-nums ${
+                      pet.care.careStreak > 0 ? "text-accent" : "text-fg"
+                    }`}
+                  >
+                    {pet.care.careStreak}
+                  </p>
+                  <p className="text-[11px] text-muted">day care streak</p>
+                </div>
+                <div className="hidden h-7 w-px bg-border sm:block" />
+                <div>
+                  <p className="text-sm font-semibold tabular-nums text-fg">{pet.care.daysTogether}</p>
+                  <p className="text-[11px] text-muted">days together</p>
+                </div>
+                <div className="hidden h-7 w-px bg-border sm:block" />
+                <div>
+                  <p className="text-sm font-semibold text-fg">{pet.growth?.title ?? "New"}</p>
+                  <p className="text-[11px] text-muted">stage</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardBody>
+      </Card>
+
+      {(pet.mood === "hungry" || pet.mood === "sad") && (
+        <Banner tone={pet.mood === "sad" ? "danger" : "warning"}>
+          {pet.name} is {pet.mood === "sad" ? "very hungry" : "getting hungry"}.{" "}
+          {pet.meals > 0 ? "Feed them?" : "Finish anything to earn a meal."}
+        </Banner>
+      )}
+
+      {message && <Banner tone="success">{message}</Banner>}
+    </div>
+  );
+}

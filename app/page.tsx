@@ -2,7 +2,7 @@ import { getSession, isLocalMode, microsoftConfigured } from "@/lib/session";
 import { SignIn, SignOut } from "@/components/layout/SignIn";
 import { SetupNeeded } from "@/components/layout/SetupNeeded";
 import { AppShell } from "@/components/layout/AppShell";
-import { DeadlineList } from "@/components/features/deadlines/DeadlineList";
+import { HomeDashboard } from "@/components/features/dashboard/HomeDashboard";
 import { Page, PageHeader, Banner } from "@/components/ui";
 
 export default async function Home() {
@@ -33,8 +33,8 @@ export default async function Home() {
 
   return (
     <AppShell email={session.user?.email} action={<SignOut />}>
-      <Page>
-        <PageHeader title="Deadlines" subtitle="Everything due, from ManageBac and your inbox." />
+      <Page width="lg">
+        <PageHeader title="Dashboard" subtitle="What's due, what's in progress, and what's still to do." />
 
         <div className="space-y-4">
           {isLocalMode && (
@@ -50,7 +50,7 @@ export default async function Home() {
             </Banner>
           )}
 
-          <DeadlineList />
+          <HomeDashboard />
         </div>
       </Page>
     </AppShell>

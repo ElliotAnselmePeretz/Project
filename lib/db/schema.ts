@@ -25,13 +25,22 @@ export const deadlines = sqliteTable(
     title: text("title").notNull(),
     description: text("description"),
     dueAt: integer("due_at", { mode: "timestamp" }).notNull(),
-    source: text("source", { enum: ["managebac", "outlook"] }).notNull(),
+    source: text("source", { enum: ["managebac", "outlook", "manual"] }).notNull(),
     /** Stable id from the source system, so re-syncing updates instead of duplicating. */
     sourceKey: text("source_key").notNull(),
     sourceUrl: text("source_url"),
     /** 1.0 for an explicit calendar date; lower when inferred from email prose. */
     confidence: real("confidence").notNull().default(1),
     dismissed: integer("dismissed", { mode: "boolean" }).notNull().default(false),
+    completedAt: integer("completed_at", { mode: "timestamp" }),
+    /**
+     * Whether this deadline has ever paid out a meal. Completing is now
+     * reversible, so without this a user could un-complete and re-complete the
+     * same item forever to farm meals.
+     */
+    mealAwarded: integer("meal_awarded", { mode: "boolean" }).notNull().default(false),
+    /** Optional link to an IB group, so deadlines can be filtered by subject. */
+    subject: text("subject"),
     updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
   },
   (t) => [
@@ -124,11 +133,266 @@ export const subjectNotes = sqliteTable(
   (t) => [index("subject_notes_user_group").on(t.userId, t.groupNumber)],
 );
 
+/**
+ * The internal assessment for one subject — at most one per subject, so the
+ * group number keys it exactly as the other subject tables do.
+ */
+export const subjectIas = sqliteTable(
+  "subject_ias",
+  {
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    /** "IA" or "IOA" by default, but renameable: schools differ. */
+    label: text("label"),
+    /** Research question for a written IA; the text or extract for an oral. */
+    title: text("title"),
+    supervisor: text("supervisor"),
+    /** One of the stage keys in lib/ia.ts, or null before anything starts. */
+    stage: text("stage"),
+    /** Words for written work, minutes for an oral — see lengthUnitFor(). */
+    lengthCount: integer("length_count"),
+    lengthLimit: integer("length_limit"),
+    draftDueAt: integer("draft_due_at", { mode: "timestamp" }),
+    finalDueAt: integer("final_due_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.groupNumber] })],
+);
+
+/**
+ * A marking criterion the student enters themselves, with their own honest
+ * score against it. Entered rather than shipped: criteria and their mark
+ * allocations differ by subject and syllabus version.
+ */
+export const iaCriteria = sqliteTable(
+  "ia_criteria",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    name: text("name").notNull(),
+    maxMark: integer("max_mark").notNull(),
+    selfMark: integer("self_mark"),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("ia_criteria_user_group").on(t.userId, t.groupNumber)],
+);
+
+/** What a supervisor said, and what the student changed because of it. */
+export const iaFeedback = sqliteTable(
+  "ia_feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    groupNumber: integer("group_number").notNull(),
+    note: text("note").notNull(),
+    response: text("response"),
+    givenAt: integer("given_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("ia_feedback_user_group").on(t.userId, t.groupNumber)],
+);
+
+/** The extended essay — one per student, so the user id alone keys it. */
+export const extendedEssays = sqliteTable("extended_essays", {
+  userId: text("user_id").primaryKey(),
+  title: text("title"),
+  researchQuestion: text("research_question"),
+  /** The subject the essay is registered in — free text, since it need not be one of the six. */
+  subject: text("subject"),
+  topic: text("topic"),
+  supervisor: text("supervisor"),
+  stage: text("stage"),
+  wordCount: integer("word_count"),
+  wordLimit: integer("word_limit"),
+  /** A to E, unlike a subject's 1 to 7. */
+  predictedGrade: text("predicted_grade"),
+  draftDueAt: integer("draft_due_at", { mode: "timestamp" }),
+  finalDueAt: integer("final_due_at", { mode: "timestamp" }),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+});
+
+/**
+ * The three formal reflection sessions. Fixed slots rather than a list, since
+ * there are exactly three and the last one is the viva voce.
+ */
+export const eeReflections = sqliteTable(
+  "ee_reflections",
+  {
+    userId: text("user_id").notNull(),
+    sessionKey: text("session_key").notNull(),
+    body: text("body"),
+    heldAt: integer("held_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.sessionKey] })],
+);
+
+/**
+ * Goals and notes for the areas that are not subjects — EE, TOK, CAS — sharing
+ * a scope string so a new area needs a route rather than new tables.
+ */
+export const workGoals = sqliteTable(
+  "work_goals",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    scope: text("scope").notNull(),
+    text: text("text").notNull(),
+    done: integer("done", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("work_goals_user_scope").on(t.userId, t.scope)],
+);
+
+export const workNotes = sqliteTable(
+  "work_notes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    scope: text("scope").notNull(),
+    title: text("title"),
+    body: text("body").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("work_notes_user_scope").on(t.userId, t.scope)],
+);
+
+/**
+ * One row per TOK component — the exhibition and the essay. They are separate
+ * pieces of work months apart, so each keeps its own stage, deadlines, word
+ * count and predicted grade.
+ */
+export const tokComponents = sqliteTable(
+  "tok_components",
+  {
+    userId: text("user_id").notNull(),
+    /** "exhibition" or "essay". */
+    component: text("component").notNull(),
+    /** The IA prompt for the exhibition; the prescribed title for the essay. */
+    title: text("title"),
+    stage: text("stage"),
+    wordCount: integer("word_count"),
+    wordLimit: integer("word_limit"),
+    /** A to E, like the extended essay. */
+    predictedGrade: text("predicted_grade"),
+    draftDueAt: integer("draft_due_at", { mode: "timestamp" }),
+    finalDueAt: integer("final_due_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.component] })],
+);
+
+/**
+ * The exhibition's three objects. Fixed numbered slots rather than a list,
+ * because there are exactly three.
+ */
+export const tokObjects = sqliteTable(
+  "tok_objects",
+  {
+    userId: text("user_id").notNull(),
+    slot: integer("slot").notNull(),
+    name: text("name"),
+    /** Where the object comes from — its specific real-world context. */
+    context: text("context"),
+    /** How it answers the prompt. */
+    link: text("link"),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.slot] })],
+);
+
+export type TokComponentRow = typeof tokComponents.$inferSelect;
+export type TokObject = typeof tokObjects.$inferSelect;
+
+export type ExtendedEssay = typeof extendedEssays.$inferSelect;
+export type EeReflection = typeof eeReflections.$inferSelect;
+export type WorkGoal = typeof workGoals.$inferSelect;
+export type WorkNote = typeof workNotes.$inferSelect;
+
+/**
+ * One CAS experience. The three strands are separate flags rather than one
+ * value, because a single activity often serves more than one — coaching a
+ * team is Activity and Service.
+ */
+export const casActivities = sqliteTable(
+  "cas_activities",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    hours: real("hours").notNull().default(0),
+    creativity: integer("creativity", { mode: "boolean" }).notNull().default(false),
+    activity: integer("activity", { mode: "boolean" }).notNull().default(false),
+    service: integer("service", { mode: "boolean" }).notNull().default(false),
+    /** The CAS project, as opposed to an ordinary experience. */
+    isProject: integer("is_project", { mode: "boolean" }).notNull().default(false),
+    happenedAt: integer("happened_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+  },
+  (t) => [index("cas_activities_user").on(t.userId)],
+);
+
+export type CasActivity = typeof casActivities.$inferSelect;
+
+export type SubjectIa = typeof subjectIas.$inferSelect;
+export type IaCriterion = typeof iaCriteria.$inferSelect;
+export type IaFeedbackEntry = typeof iaFeedback.$inferSelect;
+
 export type Assessment = typeof assessments.$inferSelect;
 export type SubjectTarget = typeof subjectTargets.$inferSelect;
 export type SubjectGoal = typeof subjectGoals.$inferSelect;
 export type SubjectNote = typeof subjectNotes.$inferSelect;
 
+/**
+ * One pet per user. `meals` is the earned currency: completing a deadline adds
+ * one, feeding spends one. `hunger` is the value at `lastFedAt` — the live
+ * figure is derived from elapsed time by lib/pets.ts, so a pet gets hungry
+ * whether or not anyone opens the page.
+ */
+export const pets = sqliteTable("pets", {
+  userId: text("user_id").primaryKey(),
+  species: text("species", {
+    enum: ["nimbus", "sprout", "ember", "pebble", "ripple", "moth", "star", "blot"],
+  }).notNull(),
+  name: text("name").notNull(),
+  hunger: real("hunger").notNull().default(100),
+  xp: integer("xp").notNull().default(0),
+  meals: integer("meals").notNull().default(0),
+  lastFedAt: integer("last_fed_at", { mode: "timestamp" }).notNull(),
+  hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(unixepoch())`),
+});
+
+export type Pet = typeof pets.$inferSelect;
+export type NewPet = typeof pets.$inferInsert;
+
+/**
+ * One row per meal ever earned, keyed by what earned it.
+ *
+ * The unique constraint is the whole point: a meal is paid once per piece of
+ * work, ever. Completing something, undoing it and completing it again cannot
+ * mint a second meal, however the user gets there. It also gives the pet an
+ * honest history — total meals and a care streak come from real rows rather
+ * than a counter that could drift.
+ */
+export const petMeals = sqliteTable(
+  "pet_meals",
+  {
+    userId: text("user_id").notNull(),
+    sourceType: text("source_type", { enum: ["deadline", "subject-goal", "work-goal"] }).notNull(),
+    sourceId: text("source_id").notNull(),
+    earnedAt: integer("earned_at", { mode: "timestamp" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.sourceType, t.sourceId] }),
+    index("pet_meals_user_earned").on(t.userId, t.earnedAt),
+  ],
+);
+
+export type PetMeal = typeof petMeals.$inferSelect;
 /* --- Daily study planner --------------------------------------------------
  *
  * `planDate` is a 'YYYY-MM-DD' string in the *student's* local timezone, sent

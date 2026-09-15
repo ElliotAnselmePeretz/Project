@@ -37,8 +37,47 @@ export function ensureSchema() {
         source_url TEXT,
         confidence REAL NOT NULL DEFAULT 1,
         dismissed INTEGER NOT NULL DEFAULT 0,
+        completed_at INTEGER,
+        meal_awarded INTEGER NOT NULL DEFAULT 0,
+        subject TEXT,
         updated_at INTEGER DEFAULT (unixepoch())
       )`);
+    // Existing databases predate these columns; SQLite has no IF NOT EXISTS for
+    // ADD COLUMN, so attempt each and ignore the duplicate-column error.
+    for (const col of [
+      "completed_at INTEGER",
+      "meal_awarded INTEGER NOT NULL DEFAULT 0",
+      "subject TEXT",
+    ]) {
+      try {
+        await client.execute(`ALTER TABLE deadlines ADD COLUMN ${col}`);
+      } catch {
+        /* column already present */
+      }
+    }
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS pets (
+        user_id TEXT PRIMARY KEY,
+        species TEXT NOT NULL,
+        name TEXT NOT NULL,
+        hunger REAL NOT NULL DEFAULT 100,
+        xp INTEGER NOT NULL DEFAULT 0,
+        meals INTEGER NOT NULL DEFAULT 0,
+        last_fed_at INTEGER NOT NULL,
+        hidden INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS pet_meals (
+        user_id TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        source_id TEXT NOT NULL,
+        earned_at INTEGER NOT NULL,
+        PRIMARY KEY (user_id, source_type, source_id)
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS pet_meals_user_earned ON pet_meals (user_id, earned_at)`,
+    );
     await client.execute(`
       CREATE TABLE IF NOT EXISTS planner_checkins (
         user_id TEXT NOT NULL,
@@ -163,6 +202,138 @@ export function ensureSchema() {
       )`);
     await client.execute(
       `CREATE INDEX IF NOT EXISTS subject_notes_user_group ON subject_notes (user_id, group_number)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS subject_ias (
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        label TEXT,
+        title TEXT,
+        supervisor TEXT,
+        stage TEXT,
+        length_count INTEGER,
+        length_limit INTEGER,
+        draft_due_at INTEGER,
+        final_due_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, group_number)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS ia_criteria (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        max_mark INTEGER NOT NULL,
+        self_mark INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS ia_criteria_user_group ON ia_criteria (user_id, group_number)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS ia_feedback (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        group_number INTEGER NOT NULL,
+        note TEXT NOT NULL,
+        response TEXT,
+        given_at INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS ia_feedback_user_group ON ia_feedback (user_id, group_number)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS extended_essays (
+        user_id TEXT PRIMARY KEY,
+        title TEXT,
+        research_question TEXT,
+        subject TEXT,
+        topic TEXT,
+        supervisor TEXT,
+        stage TEXT,
+        word_count INTEGER,
+        word_limit INTEGER,
+        predicted_grade TEXT,
+        draft_due_at INTEGER,
+        final_due_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS ee_reflections (
+        user_id TEXT NOT NULL,
+        session_key TEXT NOT NULL,
+        body TEXT,
+        held_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, session_key)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS work_goals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        text TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS work_goals_user_scope ON work_goals (user_id, scope)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS work_notes (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        title TEXT,
+        body TEXT NOT NULL,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS work_notes_user_scope ON work_notes (user_id, scope)`,
+    );
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS tok_components (
+        user_id TEXT NOT NULL,
+        component TEXT NOT NULL,
+        title TEXT,
+        stage TEXT,
+        word_count INTEGER,
+        word_limit INTEGER,
+        predicted_grade TEXT,
+        draft_due_at INTEGER,
+        final_due_at INTEGER,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, component)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS tok_objects (
+        user_id TEXT NOT NULL,
+        slot INTEGER NOT NULL,
+        name TEXT,
+        context TEXT,
+        link TEXT,
+        updated_at INTEGER DEFAULT (unixepoch()),
+        PRIMARY KEY (user_id, slot)
+      )`);
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS cas_activities (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        hours REAL NOT NULL DEFAULT 0,
+        creativity INTEGER NOT NULL DEFAULT 0,
+        activity INTEGER NOT NULL DEFAULT 0,
+        service INTEGER NOT NULL DEFAULT 0,
+        is_project INTEGER NOT NULL DEFAULT 0,
+        happened_at INTEGER,
+        created_at INTEGER DEFAULT (unixepoch())
+      )`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS cas_activities_user ON cas_activities (user_id)`,
     );
   })();
   return ready;

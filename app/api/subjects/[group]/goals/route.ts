@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { resolveSubject } from "@/lib/subject-request";
 import { validateText } from "@/lib/subject-manager";
+import { awardMeal } from "@/lib/pet-meals";
 
 type Params = { params: Promise<{ group: string }> };
 
@@ -52,7 +53,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "No such goal" }, { status: 404 });
   }
 
-  return NextResponse.json({ id, done });
+  // Finishing a goal feeds the pet, once ever. Un-completing does not refund:
+  // the meal may already be spent and its XP banked, so a refund would make
+  // one goal farmable by toggling.
+  const mealEarned = done ? await awardMeal(userId, "subject-goal", id) : false;
+
+  return NextResponse.json({ id, done, mealEarned });
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {

@@ -176,8 +176,10 @@ body {
    this file. Use these utilities rather than hand-rolling keyframes.
    ========================================================================= */
 
+/* Kept deliberately small: pages open often, so their entrance should be
+   felt rather than watched. 3px of travel reads as settling, not sliding. */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -260,21 +262,17 @@ body {
 .cascade > *:nth-child(10) { animation-delay: 0.58s; }
 .cascade > *:nth-child(n + 11) { animation-delay: 0.62s; }
 
-.animate-fade-up   { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* Timing from main's calmer-motion pass; do not lengthen without agreeing. */
+.animate-fade-up   { animation: fade-up 0.25s ease-out both; }
 .animate-fade-in   { animation: fade-in 0.4s ease both; }
 .animate-slide-in  { animation: slide-in-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-/* Stagger children: each item enters slightly after the one above it. */
-.stagger > * { animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.stagger > *:nth-child(1) { animation-delay: 0.03s; }
-.stagger > *:nth-child(2) { animation-delay: 0.06s; }
-.stagger > *:nth-child(3) { animation-delay: 0.09s; }
-.stagger > *:nth-child(4) { animation-delay: 0.12s; }
-.stagger > *:nth-child(5) { animation-delay: 0.15s; }
-.stagger > *:nth-child(6) { animation-delay: 0.18s; }
-.stagger > *:nth-child(7) { animation-delay: 0.21s; }
-.stagger > *:nth-child(8) { animation-delay: 0.24s; }
-.stagger > *:nth-child(n + 9) { animation-delay: 0.27s; }
+/* Stagger children: each item enters just after the one above it. The step
+   is short and caps early, so a long list never makes you wait for its end. */
+.stagger > * { animation: fade-up 0.25s ease-out both; }
+.stagger > *:nth-child(2) { animation-delay: 0.02s; }
+.stagger > *:nth-child(3) { animation-delay: 0.04s; }
+.stagger > *:nth-child(n + 4) { animation-delay: 0.06s; }
 
 /* ============================================================================
    AMBIENT GLOW
