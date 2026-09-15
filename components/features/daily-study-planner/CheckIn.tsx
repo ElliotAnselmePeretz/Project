@@ -189,8 +189,16 @@ export function CheckIn({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           {t.subject && <Badge tone="neutral">{t.subject}</Badge>}
-                          <Badge tone={t.sourceType === "goal" ? "info" : "accent"}>
-                            {t.sourceType === "goal" ? "goal" : "deadline"}
+                          <Badge
+                            tone={
+                              t.sourceType === "deadline"
+                                ? "accent"
+                                : t.sourceType === "work-goal"
+                                  ? "warning"
+                                  : "info"
+                            }
+                          >
+                            {t.sourceType === "deadline" ? "deadline" : "goal"}
                           </Badge>
                           {!t.purposeConfirmed && (
                             <span className="text-[10px] text-faint" title="We guessed this from the title">

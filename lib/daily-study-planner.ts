@@ -16,7 +16,7 @@
 export type Focus = "low" | "okay" | "good";
 export type Difficulty = "comfortable" | "challenging" | "stuck";
 export type Purpose = "learn" | "practise" | "write" | "submit";
-export type SourceType = "deadline" | "goal";
+export type SourceType = "deadline" | "goal" | "work-goal";
 
 export type Urgency = "needs-date-check" | "overdue" | "today" | "soon" | "later" | "undated";
 

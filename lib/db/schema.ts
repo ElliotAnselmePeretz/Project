@@ -425,7 +425,7 @@ export const plannerTaskState = sqliteTable(
   "planner_task_state",
   {
     userId: text("user_id").notNull(),
-    sourceType: text("source_type", { enum: ["deadline", "goal"] }).notNull(),
+    sourceType: text("source_type", { enum: ["deadline", "goal", "work-goal"] }).notNull(),
     sourceId: text("source_id").notNull(),
     difficulty: text("difficulty", { enum: ["comfortable", "challenging", "stuck"] })
       .notNull()

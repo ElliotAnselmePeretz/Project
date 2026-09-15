@@ -3,6 +3,7 @@ import { and, asc, eq, gte, inArray } from "drizzle-orm";
 import { db, ensureSchema, schema } from "@/lib/db";
 import { getGraphToken } from "@/lib/graph-token";
 import { SUBJECT_GROUPS } from "@/lib/ib-subjects";
+import { SCOPE_LABELS, isValidScope } from "@/lib/work";
 import {
   buildPlan,
   minutesToDeduct,
@@ -30,7 +31,7 @@ async function requireUser(req: NextRequest) {
  * whatever the student previously told us about it.
  */
 async function loadCandidates(userId: string): Promise<PlannerTask[]> {
-  const [deadlines, goals, selections, saved] = await Promise.all([
+  const [deadlines, goals, workGoals, selections, saved] = await Promise.all([
     db
       .select()
       .from(schema.deadlines)
@@ -40,6 +41,12 @@ async function loadCandidates(userId: string): Promise<PlannerTask[]> {
       .select()
       .from(schema.subjectGoals)
       .where(and(eq(schema.subjectGoals.userId, userId), eq(schema.subjectGoals.done, false))),
+    // EE, TOK and CAS work. These are real, plannable work and were invisible
+    // to the planner while they lived only on their own pages.
+    db
+      .select()
+      .from(schema.workGoals)
+      .where(and(eq(schema.workGoals.userId, userId), eq(schema.workGoals.done, false))),
     db.select().from(schema.subjectSelections).where(eq(schema.subjectSelections.userId, userId)),
     db.select().from(schema.plannerTaskState).where(eq(schema.plannerTaskState.userId, userId)),
   ]);
@@ -95,7 +102,22 @@ async function loadCandidates(userId: string): Promise<PlannerTask[]> {
     ),
   );
 
-  return [...fromDeadlines, ...fromGoals];
+  const fromWorkGoals = workGoals.map((g) =>
+    merge(
+      {
+        key: `work-goal:${g.id}`,
+        sourceType: "work-goal",
+        sourceId: g.id,
+        title: g.text,
+        subject: isValidScope(g.scope) ? SCOPE_LABELS[g.scope] : g.scope,
+        dueAt: null,
+        confidence: 1,
+      },
+      guessPurpose(g.text),
+    ),
+  );
+
+  return [...fromDeadlines, ...fromGoals, ...fromWorkGoals];
 }
 
 async function loadBlocks(userId: string, planDate: string) {
@@ -390,7 +412,7 @@ export async function PATCH(req: NextRequest) {
   if (delta !== 0 && existing.taskKey) {
     const [sourceType, ...rest] = existing.taskKey.split(":");
     const sourceId = rest.join(":");
-    if ((sourceType === "deadline" || sourceType === "goal") && sourceId) {
+    if ((sourceType === "deadline" || sourceType === "goal" || sourceType === "work-goal") && sourceId) {
       const taskScope = and(
         eq(schema.plannerTaskState.userId, userId),
         eq(schema.plannerTaskState.sourceType, sourceType),
@@ -420,7 +442,7 @@ export async function PATCH(req: NextRequest) {
   if (performance !== undefined && performance !== null && existing.taskKey) {
     const [sourceType, ...rest] = existing.taskKey.split(":");
     const sourceId = rest.join(":");
-    if ((sourceType === "deadline" || sourceType === "goal") && sourceId) {
+    if ((sourceType === "deadline" || sourceType === "goal" || sourceType === "work-goal") && sourceId) {
       const suggested =
         performance === "independent" ? "comfortable" : performance === "with-help" ? "challenging" : "stuck";
       await db
